@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useSpring, useTransform, useMotionValue, MotionValue } from 'framer-motion';
-import { Grid } from 'lucide-react';
+import { Grid, Search } from 'lucide-react';
 import { ServiceApp, NetworkMode } from '../types';
 import HelixCard from './HelixCard';
 
@@ -53,12 +53,77 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Handle Gestures
+  // --- SEARCH FUNCTIONALITY ---
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Global Keydown Listener to start search
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+        // Ignore if search is already active or modifiers are pressed
+        if (isSearching || e.ctrlKey || e.altKey || e.metaKey || e.key.length !== 1) return;
+        
+        // Only trigger on alphanumeric-ish keys
+        if (!/^[a-zA-Z0-9]$/.test(e.key)) return;
+
+        e.preventDefault();
+        setIsSearching(true);
+        setSearchQuery(e.key);
+        // Focus will happen via useEffect dependent on isSearching
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [isSearching]);
+
+  // Auto-focus input when search starts
+  useEffect(() => {
+    if (isSearching && searchInputRef.current) {
+        searchInputRef.current.focus();
+    }
+  }, [isSearching]);
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        // Fuzzy Search Logic
+        const matchIndex = services.findIndex(s => 
+            s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+            s.category.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+
+        if (matchIndex !== -1) {
+            setTargetIndex(matchIndex);
+            setIsOverview(false);
+            // Close search
+            setIsSearching(false);
+            setSearchQuery('');
+        }
+    } else if (e.key === 'Escape') {
+        setIsSearching(false);
+        setSearchQuery('');
+    }
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const val = e.target.value;
+      setSearchQuery(val);
+      if (val.length === 0) {
+          setIsSearching(false);
+      }
+  };
+
+
+  // --- GESTURE HANDLING ---
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
     const handleWheel = (e: WheelEvent) => {
+        // Prevent gestures if searching
+        if (isSearching) return;
+
         e.preventDefault();
 
         const { deltaX, deltaY } = e;
@@ -80,10 +145,7 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
             }
         }
 
-        // --- NAVIGATION (Horizontal Swipe OR Wheel backup) ---
-        // If we are strictly navigating, or if the user is using a mouse wheel (which sends Y) 
-        // but hasn't triggered the threshold for mode switching yet.
-        
+        // --- NAVIGATION ---
         let moveDelta = 0;
 
         if (absX > absY) {
@@ -110,12 +172,17 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
     return () => {
         container.removeEventListener('wheel', handleWheel);
     };
-  }, [isOverview, services.length]);
+  }, [isOverview, services.length, isSearching]);
 
   const handleNodeClick = (index: number) => {
     setTargetIndex(index);
     setIsOverview(false);
   };
+
+  // Preview match for search UI
+  const previewMatch = services.find(s => 
+    searchQuery && (s.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.category.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
   return (
     <div 
@@ -130,6 +197,49 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
             isOverview={isOverview}
             onToggleOverview={() => setIsOverview(!isOverview)}
         />
+
+        {/* --- SEARCH UI OVERLAY --- */}
+        {isSearching && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-[2px]">
+                <div className="w-full max-w-xl px-4 flex flex-col items-center">
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="w-full relative"
+                    >
+                        <div className="text-neon-cyan font-mono text-[10px] tracking-[0.4em] uppercase mb-2 text-center">
+                            System Query Protocol
+                        </div>
+                        <input
+                            ref={searchInputRef}
+                            type="text"
+                            value={searchQuery}
+                            onChange={handleSearchChange}
+                            onKeyDown={handleSearchKeyDown}
+                            className="w-full bg-transparent text-center font-display font-bold text-5xl md:text-7xl text-white uppercase outline-none placeholder-neon-cyan/20 caret-neon-pink"
+                            spellCheck={false}
+                        />
+                        <div className="w-full h-[2px] bg-neon-cyan shadow-[0_0_15px_#00f3ff] mt-2 relative overflow-hidden">
+                             <div className="absolute inset-0 bg-white/50 animate-pulse-fast w-full h-full" />
+                        </div>
+                        
+                        {/* Fuzzy Match Preview */}
+                        <div className="mt-4 h-8 flex items-center justify-center text-neon-cyan/80 font-mono tracking-widest text-sm">
+                            {previewMatch ? (
+                                <>
+                                    <span className="opacity-50 mr-2">{'>'} DETECTED:</span>
+                                    <span className="font-bold border border-neon-cyan/30 px-2 py-0.5 bg-neon-cyan/10">
+                                        {previewMatch.name}
+                                    </span>
+                                </>
+                            ) : (
+                                <span className="text-red-500 opacity-70">{'>'} NO_MATCHING_SIGNATURE</span>
+                            )}
+                        </div>
+                    </motion.div>
+                </div>
+            </div>
+        )}
 
         {/* Interaction Zone - Center Line */}
         <div className="relative w-full h-full md:h-[60%] flex items-center justify-center pointer-events-none mb-10 md:mb-0">
@@ -159,7 +269,10 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
             animate={{ opacity: [0.5, 1, 0.5] }}
             transition={{ duration: 3, repeat: Infinity }}
         >
-            {isOverview ? "Swipe Down to Expand • Swipe Left/Right to Navigate" : "Swipe Up for Overview • Scroll to Navigate"}
+            {isSearching 
+                ? "PRESS ENTER TO JUMP • ESC TO CANCEL"
+                : (isOverview ? "Swipe Down to Expand • Swipe Left/Right to Navigate • Type to Search" : "Swipe Up for Overview • Scroll to Navigate")
+            }
         </motion.div>
     </div>
   );
@@ -328,7 +441,7 @@ const HUD: React.FC<HUDProps> = ({ currentIndex, total, services, isOverview, on
                     className="text-4xl md:text-6xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-neon-cyan to-white tracking-tighter drop-shadow-[0_0_15px_rgba(0,243,255,0.4)] cursor-pointer"
                     onClick={onToggleOverview}
                 >
-                    NEUROLINK
+                    HELIXS
                 </h1>
                 <div className="flex items-center gap-4 mt-2">
                      <span className="text-neon-cyan/60 font-mono text-xs tracking-[0.3em] uppercase">Homelab Nav System v2.0</span>

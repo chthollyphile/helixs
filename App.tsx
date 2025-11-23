@@ -14,7 +14,7 @@ const App: React.FC = () => {
     setNetworkMode(detectNetworkMode());
     
     // Intro animation timeout
-    const timer = setTimeout(() => setIsLoaded(true), 1500);
+    const timer = setTimeout(() => setIsLoaded(true), 2500);
     return () => clearTimeout(timer);
   }, []);
 
@@ -30,20 +30,29 @@ const App: React.FC = () => {
 
       {/* Intro Overlay / Loader */}
       {!isLoaded && (
-        <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center gap-6">
-             <div className="relative">
-                <div className="w-24 h-24 border-t-2 border-b-2 border-neon-cyan rounded-full animate-spin-slow" />
-                <div className="absolute inset-0 w-24 h-24 border-l-2 border-r-2 border-neon-pink rounded-full animate-spin reverse" />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full animate-pulse" />
+        <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center gap-8">
+             {/* Animation: Box orbiting a line */}
+             <div className="relative w-24 h-24 flex items-center justify-center perspective-1000">
+                 {/* Central Static Line */}
+                 <div className="w-[1px] h-20 bg-neon-cyan/50 shadow-[0_0_10px_#00f3ff]" />
+                 
+                 {/* Rotating Container */}
+                 <div className="absolute inset-0 flex items-center justify-center animate-spin-medium">
+                      {/* Orbiting Square (Offset) */}
+                      <div className="w-6 h-6 border border-neon-cyan bg-black/80 shadow-[0_0_15px_rgba(0,243,255,0.4)] translate-x-10 rotate-45 backdrop-blur-sm" />
+                      
+                      {/* Optional: Second Square for balance/complexity */}
+                      <div className="w-4 h-4 border border-neon-pink/50 bg-transparent -translate-x-10 rotate-12" />
+                 </div>
              </div>
              
-             <div className="text-center">
-                 <h2 className="font-display font-bold text-2xl text-white tracking-[0.5em] mb-2">NEUROLINK</h2>
+             <div className="text-center z-10">
+                 <h2 className="font-display font-bold text-3xl text-white tracking-[0.5em] mb-2">HELIXS</h2>
                  <div className="font-mono text-neon-cyan/70 text-xs animate-pulse">
-                   INITIALIZING PROTOCOLS...
+                   SYSTEM INITIALIZATION...
                  </div>
                  <div className="mt-2 text-[10px] text-gray-600 font-mono">
-                   {networkMode} DETECTED
+                   {networkMode} PROTOCOL ENGAGED
                  </div>
              </div>
         </div>
