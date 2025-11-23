@@ -1,20 +1,32 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# HelixS
 
-# Run and deploy your AI Studio app
+A futuristic, wireframe-style 3D navigation interface for homelab services featuring a DNA-helix interaction model and dynamic LAN/WAN routing.
 
-This contains everything you need to run your app locally.
+![HelixS Preview](https://placehold.co/800x400/050505/00f3ff?text=HelixS+Preview)
 
-View your app in AI Studio: https://ai.studio/apps/drive/1mEizsMR4a1vglHZv5ua8FHKe5IVQozLv
+## Features
 
-## Run Locally
+- **Futuristic UI**: Wireframe aesthetic with neon styling and 3D animations.
+- **DNA Navigation**: Unique horizontal scrolling interface imitating a DNA helix structure.
+- **Dual Network Mode**: Automatically detects if you are on LAN or WAN and serves the appropriate service URL.
+- **Search Protocol**: Keyboard-driven fuzzy search for quick access.
+- **Responsive**: Adapts from overview mode to focused detail view.
 
-**Prerequisites:**  Node.js
+## One-Click Deploy
 
+Deploy this application directly to Vercel with a single click.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fyour-username%2Fhelixs)
+
+*Note: After clicking, replace the `repository-url` in the address bar with your actual GitHub repository URL if it doesn't auto-fill.*
+
+## Setup
+
+1. Clone the repository.
+2. Install dependencies: `npm install`
+3. Start development server: `npm start`
+4. Build for production: `npm run build`
+
+## Configuration
+
+Edit `src/data.ts` to configure your specific services, icons, and local/remote URLs.
