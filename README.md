@@ -16,7 +16,7 @@ A futuristic, wireframe-style 3D navigation interface for homelab services featu
 
 Deploy this application directly to Vercel with a single click.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fyour-username%2Fhelixs)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fchthollyphile%2Fhelixs)
 
 *Note: After clicking, replace the `repository-url` in the address bar with your actual GitHub repository URL if it doesn't auto-fill.*
 
