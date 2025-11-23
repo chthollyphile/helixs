@@ -58,11 +58,27 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Global Keydown Listener to start search
+  // Global Keydown Listener to start search AND handle navigation
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-        // Ignore if search is already active or modifiers are pressed
-        if (isSearching || e.ctrlKey || e.altKey || e.metaKey || e.key.length !== 1) return;
+        // Ignore if search is already active
+        if (isSearching) return;
+
+        // --- NAVIGATION ---
+        if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            setTargetIndex(prev => Math.max(0, Math.ceil(prev) - 1));
+            return;
+        }
+        if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            setTargetIndex(prev => Math.min(services.length - 1, Math.floor(prev) + 1));
+            return;
+        }
+
+        // --- SEARCH TRIGGER ---
+        // Ignore if modifiers are pressed
+        if (e.ctrlKey || e.altKey || e.metaKey || e.key.length !== 1) return;
         
         // Only trigger on alphanumeric-ish keys
         if (!/^[a-zA-Z0-9]$/.test(e.key)) return;
@@ -75,7 +91,7 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
 
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [isSearching]);
+  }, [isSearching, services.length]);
 
   // Auto-focus input when search starts
   useEffect(() => {
@@ -295,7 +311,7 @@ const HelixNode = ({
 }) => {
     // Distance from the currently looked-at index
     const distanceFromCenter = useTransform(globalIndex, (v) => index - v);
-
+    
     // --- SPACING LOGIC ---
     const [winWidth, setWinWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1000);
 
@@ -379,6 +395,24 @@ const HelixNode = ({
         return rawActive * (1 - (o as number));
     });
 
+    // --- LABEL VISIBILITY LOGIC ---
+    // Visible only when:
+    // 1. Not in Overview Mode (overviewProgress ~ 0)
+    // 2. Not the active center card (activeStrength < 0.8)
+    const labelOpacity = useTransform([activeStrength, overviewProgress], ([strength, overview]) => {
+        const s = strength as number;
+        const o = overview as number;
+        
+        // Hide in overview
+        if (o > 0.5) return 0;
+        
+        // Hide on center card (it has its own title inside the card)
+        if (s > 0.8) return 0;
+        
+        // Fade in for side nodes
+        return 1;
+    });
+
     return (
         <motion.div
             style={{
@@ -391,7 +425,7 @@ const HelixNode = ({
                 cursor: 'pointer'
             }}
             onClick={onClick}
-            className="pointer-events-auto flex justify-center items-center"
+            className="pointer-events-auto flex justify-center items-center relative"
             whileHover={{ scale: 1.2 }}
         >
              {/* Connector Line - Only visible in Focus Mode */}
@@ -409,6 +443,18 @@ const HelixNode = ({
                 activeStrength={activeStrength}
                 networkMode={networkMode}
             />
+
+            {/* Permanent Label (Only active in Focus Mode when NOT the main card) */}
+            <motion.div
+                style={{ opacity: labelOpacity }}
+                className="absolute -top-10 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none"
+            >
+                 <span className="text-[10px] font-mono text-neon-cyan/80 bg-black/60 px-2 py-0.5 rounded border border-neon-cyan/20 whitespace-nowrap backdrop-blur-sm shadow-[0_0_10px_rgba(0,243,255,0.2)]">
+                    {service.name}
+                 </span>
+                 {/* Connecting line to dot */}
+                 <div className="w-[1px] h-4 bg-gradient-to-b from-neon-cyan/50 to-transparent"></div>
+            </motion.div>
         </motion.div>
     );
 };

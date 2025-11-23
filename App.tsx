@@ -2,16 +2,41 @@ import React, { useState, useEffect } from 'react';
 import DNAHelix from './components/DNAHelix';
 import Background from './components/Background';
 import { detectNetworkMode } from './utils/network';
-import { services } from './data';
-import { NetworkMode } from './types';
+import { services as defaultServices } from './data';
+import { NetworkMode, ServiceApp } from './types';
 
 const App: React.FC = () => {
   const [networkMode, setNetworkMode] = useState<NetworkMode>('WAN');
   const [isLoaded, setIsLoaded] = useState(false);
+  const [servicesData, setServicesData] = useState<ServiceApp[]>([]);
+  const [configLoaded, setConfigLoaded] = useState(false);
 
   useEffect(() => {
     // Detect network environment
     setNetworkMode(detectNetworkMode());
+    
+    // Fetch configuration
+    const loadConfig = async () => {
+      try {
+        const response = await fetch('/config.json');
+        if (!response.ok) {
+          throw new Error('Failed to load config');
+        }
+        const data = await response.json();
+        if (data.services && Array.isArray(data.services)) {
+          setServicesData(data.services);
+        } else {
+          setServicesData(defaultServices);
+        }
+      } catch (error) {
+        console.warn('Could not load external config, using default embedded data.', error);
+        setServicesData(defaultServices);
+      } finally {
+        setConfigLoaded(true);
+      }
+    };
+
+    loadConfig();
     
     // Intro animation timeout
     const timer = setTimeout(() => setIsLoaded(true), 2500);
@@ -24,12 +49,12 @@ const App: React.FC = () => {
       <Background />
 
       {/* Main Content */}
-      <main className={`transition-opacity duration-1000 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
-         <DNAHelix services={services} networkMode={networkMode} />
+      <main className={`transition-opacity duration-1000 ${isLoaded && configLoaded ? 'opacity-100' : 'opacity-0'}`}>
+         {configLoaded && <DNAHelix services={servicesData} networkMode={networkMode} />}
       </main>
 
       {/* Intro Overlay / Loader */}
-      {!isLoaded && (
+      {(!isLoaded || !configLoaded) && (
         <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center gap-8">
              {/* Animation: Box orbiting a line */}
              <div className="relative w-24 h-24 flex items-center justify-center perspective-1000">
@@ -49,7 +74,7 @@ const App: React.FC = () => {
              <div className="text-center z-10">
                  <h2 className="font-display font-bold text-3xl text-white tracking-[0.5em] mb-2">HELIXS</h2>
                  <div className="font-mono text-neon-cyan/70 text-xs animate-pulse">
-                   SYSTEM INITIALIZATION...
+                   {configLoaded ? 'SYSTEM INITIALIZATION...' : 'LOADING PROTOCOLS...'}
                  </div>
                  <div className="mt-2 text-[10px] text-gray-600 font-mono">
                    {networkMode} PROTOCOL ENGAGED
