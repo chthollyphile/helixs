@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  helixs:
+    build: .
+    container_name: helixs
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      # Mount the config file so you can edit it on the host without rebuilding
+      - ./public/config.json:/usr/share/nginx/html/config.json
+    networks:
+      - homelab
+
+networks:
+  homelab:
+    driver: bridge
