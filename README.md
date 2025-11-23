@@ -30,5 +30,3 @@ Deploy this application directly to Vercel with a single click.
 ## Configuration
 
 Edit `src/data.ts` to configure your specific services, icons, and local/remote URLs.
-
-
