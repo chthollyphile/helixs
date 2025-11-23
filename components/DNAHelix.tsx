@@ -323,7 +323,8 @@ const HelixNode = ({
 
     // More compacted spacing in Overview to see the wave
     const overviewSpacing = Math.min(60, winWidth / 20); 
-    const focusSpacing = 280;
+    // Increased Focus Spacing for larger cards (340px width + padding)
+    const focusSpacing = 360;
     
     const currentSpacing = useTransform(overviewProgress, [0, 1], [focusSpacing, overviewSpacing]);
 

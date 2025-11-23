@@ -14,6 +14,13 @@ const HelixCard: React.FC<HelixCardProps> = ({ app, activeStrength, networkMode 
   // @ts-ignore
   const IconComponent = Icons[app.icon] || Icons.HelpCircle;
   const currentUrl = getActiveUrl(app, networkMode);
+  
+  let hostname = '';
+  try {
+      hostname = new URL(currentUrl).hostname;
+  } catch (e) {
+      hostname = 'UNKNOWN_HOST';
+  }
 
   // --- Dynamic Styles based on Active Strength ---
   
@@ -30,7 +37,7 @@ const HelixCard: React.FC<HelixCardProps> = ({ app, activeStrength, networkMode 
   const dotScale = useTransform(activeStrength, [0, 0.5], [1, 0.5]);
 
   return (
-    <div className="relative flex items-center justify-center w-[300px] h-[200px]">
+    <div className="relative flex items-center justify-center w-[340px] h-[240px]">
       
       {/* 1. The Small Dot / Icon Representation (For distant nodes) */}
       <motion.div 
@@ -57,45 +64,47 @@ const HelixCard: React.FC<HelixCardProps> = ({ app, activeStrength, networkMode 
         />
 
         {/* Header */}
-        <div className="relative p-5 flex items-center justify-between border-b border-neon-cyan/20">
+        <div className="relative p-5 flex items-center justify-between border-b border-neon-cyan/20 h-[70px]">
             <div className="flex items-center gap-3">
                  <div className="bg-neon-cyan/10 p-2 rounded-sm border border-neon-cyan/20">
                     <IconComponent size={20} className="text-neon-cyan" />
                  </div>
-                 <div>
-                     <h3 className="font-display font-bold text-xl text-white tracking-wider leading-none">{app.name}</h3>
+                 <div className="overflow-hidden">
+                     <h3 className="font-display font-bold text-xl text-white tracking-wider leading-none truncate max-w-[180px]">{app.name}</h3>
                      <span className="text-[10px] font-mono text-neon-cyan/50 tracking-[0.2em]">{app.category.toUpperCase()}</span>
                  </div>
             </div>
-            <div className={`w-2 h-2 rounded-full ${app.status === 'online' ? 'bg-neon-green shadow-[0_0_8px_#0aff00]' : 'bg-red-500 shadow-[0_0_8px_red]'}`} />
+            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${app.status === 'online' ? 'bg-neon-green shadow-[0_0_8px_#0aff00]' : 'bg-red-500 shadow-[0_0_8px_red]'}`} />
         </div>
 
         {/* Body */}
-        <div className="p-5 flex flex-col gap-4">
-            <p className="text-xs text-gray-400 font-mono leading-relaxed border-l-2 border-gray-800 pl-3">
+        <div className="p-5 flex flex-col gap-3 h-[130px] overflow-hidden">
+            <p className="text-xs text-gray-400 font-mono leading-relaxed border-l-2 border-gray-800 pl-3 line-clamp-3">
                 {app.description}
             </p>
             
-            <div className="grid grid-cols-2 gap-2 mt-1">
+            <div className="grid grid-cols-2 gap-2 mt-auto">
                 {app.stats?.map((stat, i) => (
-                    <div key={i} className="bg-white/5 p-2 border border-white/5">
-                        <div className="text-[9px] text-gray-500 uppercase tracking-wider mb-1">{stat.label}</div>
-                        <div className="text-sm font-display text-neon-cyan">{stat.value}</div>
+                    <div key={i} className="bg-white/5 p-1.5 border border-white/5">
+                        <div className="text-[8px] text-gray-500 uppercase tracking-wider mb-0.5">{stat.label}</div>
+                        <div className="text-sm font-display text-neon-cyan truncate">{stat.value}</div>
                     </div>
                 ))}
             </div>
         </div>
 
         {/* Footer Action */}
-        <div className="absolute bottom-0 left-0 w-full flex">
-            <div className="flex-1 bg-neon-cyan/5 p-2 flex items-center justify-center border-t border-neon-cyan/20">
-                <span className="text-[9px] font-mono text-neon-cyan/60">{networkMode} • {new URL(currentUrl).hostname}</span>
+        <div className="absolute bottom-0 left-0 w-full h-10 flex z-10">
+            <div className="flex-1 h-full bg-neon-cyan/5 px-4 flex items-center border-t border-neon-cyan/20 overflow-hidden">
+                <span className="text-[9px] font-mono text-neon-cyan/60 truncate w-full">
+                    {networkMode} • {hostname}
+                </span>
             </div>
             <a 
                 href={currentUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-1/3 bg-neon-cyan text-black font-bold font-display text-sm flex items-center justify-center hover:bg-white transition-colors cursor-pointer"
+                className="w-[110px] h-full bg-neon-cyan text-black font-bold font-display text-sm flex items-center justify-center hover:bg-white transition-colors cursor-pointer flex-shrink-0"
             >
                 OPEN_SYS
             </a>
