@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useSpring, useTransform, useMotionValue, MotionValue } from 'framer-motion';
-import { Grid, Search } from 'lucide-react';
+import { Grid, Search, ArrowRight, ArrowLeft } from 'lucide-react';
 import { ServiceApp, NetworkMode } from '../types';
 import HelixCard from './HelixCard';
 
@@ -419,41 +419,58 @@ const HelixNode = ({
                 position: 'absolute',
                 x,
                 y,
-                scale,
-                opacity,
                 zIndex,
                 cursor: 'pointer'
             }}
             onClick={onClick}
             className="pointer-events-auto flex justify-center items-center relative"
-            whileHover={{ scale: 1.2 }}
         >
-             {/* Connector Line - Only visible in Focus Mode */}
-            <motion.div 
-                className="absolute top-1/2 w-[1px] bg-neon-cyan/30 origin-top"
-                style={{ 
-                    height: '100px',
-                    rotate: useTransform(y, (currentY) => currentY > 0 ? 180 : 0),
-                    opacity: useTransform(activeStrength, (s) => 1 - s) 
-                }}
-            />
-
-            <HelixCard 
-                app={service}
-                activeStrength={activeStrength}
-                networkMode={networkMode}
-            />
-
-            {/* Permanent Label (Only active in Focus Mode when NOT the main card) */}
+            {/* 
+              NESTED SCALING STRUCTURE:
+              Outer (above): Handles Position (x, y, z).
+              Middle (here): Handles calculated Scale & Opacity from helix math.
+              Inner (child): Handles relative Hover Scale.
+              
+              This separates the "base" scale from the "interaction" scale to avoid conflicts 
+              where Framer Motion overwrites the dynamic scale with a static one on hover exit.
+            */}
             <motion.div
-                style={{ opacity: labelOpacity }}
-                className="absolute -top-10 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none"
+                style={{ scale, opacity }}
+                className="flex justify-center items-center relative"
             >
-                 <span className="text-[10px] font-mono text-neon-cyan/80 bg-black/60 px-2 py-0.5 rounded border border-neon-cyan/20 whitespace-nowrap backdrop-blur-sm shadow-[0_0_10px_rgba(0,243,255,0.2)]">
-                    {service.name}
-                 </span>
-                 {/* Connecting line to dot */}
-                 <div className="w-[1px] h-4 bg-gradient-to-b from-neon-cyan/50 to-transparent"></div>
+                {/* Interaction Wrapper */}
+                <motion.div
+                    whileHover={{ scale: 1.1 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                >
+                    <HelixCard 
+                        app={service}
+                        activeStrength={activeStrength}
+                        networkMode={networkMode}
+                    />
+                </motion.div>
+
+                 {/* Connector Line - Only visible in Focus Mode */}
+                <motion.div 
+                    className="absolute top-1/2 w-[1px] bg-neon-cyan/30 origin-top pointer-events-none"
+                    style={{ 
+                        height: '100px',
+                        rotate: useTransform(y, (currentY) => currentY > 0 ? 180 : 0),
+                        opacity: useTransform(activeStrength, (s) => 1 - s) 
+                    }}
+                />
+
+                {/* Permanent Label (Only active in Focus Mode when NOT the main card) */}
+                <motion.div
+                    style={{ opacity: labelOpacity }}
+                    className="absolute -top-10 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none"
+                >
+                     <span className="text-[10px] font-mono text-neon-cyan/80 bg-black/60 px-2 py-0.5 rounded border border-neon-cyan/20 whitespace-nowrap backdrop-blur-sm shadow-[0_0_10px_rgba(0,243,255,0.2)]">
+                        {service.name}
+                     </span>
+                     {/* Connecting line to dot */}
+                     <div className="w-[1px] h-4 bg-gradient-to-b from-neon-cyan/50 to-transparent"></div>
+                </motion.div>
             </motion.div>
         </motion.div>
     );
