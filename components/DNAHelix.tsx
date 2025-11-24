@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, useSpring, useTransform, useMotionValue, MotionValue, AnimatePresence } from 'framer-motion';
-import { Grid, Search, Dna, FileCode, Layers } from 'lucide-react';
+import { Grid, Search, ArrowRight, ArrowLeft, Dna, FileCode, Layers } from 'lucide-react';
 import { ServiceApp, NetworkMode } from '../types';
 import HelixCard from './HelixCard';
 
@@ -477,7 +477,7 @@ const GenomeOverlay = ({
                 <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-neon-cyan"></div>
 
                 {/* Header */}
-                <div className="h-6 bg-neon-cyan/10 flex items-center justify-between px-2 mb-2 border-b border-neon-cyan/20">
+                <div className="h-6 bg-neon-cyan/10 flex items-center justify-between px-2 mb-2 border-b border-neon-cyan/20 shrink-0">
                      <div className="flex items-center gap-2 text-[10px] text-neon-cyan font-mono tracking-widest">
                         <Dna size={12} />
                         <span>GENOME_SEQUENCE_MAP // V.2.0</span>
@@ -488,8 +488,8 @@ const GenomeOverlay = ({
                 </div>
 
                 {/* Dense Text Content */}
-                <div className="flex-1 overflow-hidden relative p-4">
-                     <div className="w-full h-full break-all font-mono text-xs md:text-sm leading-tight text-justify opacity-80 select-none">
+                <div className="flex-1 min-h-0 relative p-4">
+                     <div className="w-full h-full overflow-y-auto break-all font-mono text-xs md:text-sm leading-tight text-justify opacity-80 select-none pr-2">
                         {matrixContent.map((item, i) => {
                             if (item.type === 'noise') {
                                 return <span key={i} className="text-gray-800 transition-colors duration-1000">{item.text}</span>;
@@ -513,7 +513,7 @@ const GenomeOverlay = ({
                 </div>
 
                 {/* Footer */}
-                <div className="h-6 mt-2 border-t border-neon-cyan/20 flex items-center justify-center">
+                <div className="h-6 mt-2 border-t border-neon-cyan/20 flex items-center justify-center shrink-0">
                     <span className="text-[8px] text-neon-cyan/40 font-mono tracking-[0.5em] animate-pulse">
                         CLICK SEQUENCE TO DECODE // CLICK VOID TO ABORT
                     </span>
@@ -763,7 +763,7 @@ const HUD: React.FC<HUDProps> = ({ currentIndex, total, services, viewState, onT
                 </div>
             </div>
 
-            {/* Detail Info - Fades out in Overview */}
+            {/* Detail Info - Fades out in Overview/Genome */}
             <motion.div 
                 className="text-right hidden md:block"
                 animate={{ opacity: viewState !== 'expand' ? 0 : 1, x: viewState !== 'expand' ? 20 : 0 }}

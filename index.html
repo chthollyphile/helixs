@@ -49,6 +49,22 @@
         scrollbar-width: none;  /* Firefox */
       }
       
+      /* Custom Neon Scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.3); 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(0, 243, 255, 0.2); 
+        border-radius: 3px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(0, 243, 255, 0.5); 
+      }
+
       .scanline {
         position: fixed;
         top: 0;
