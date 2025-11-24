@@ -34,6 +34,7 @@ services:
       - "3234:3234"
     environment:
       - lang=en
+      - title=HELIXS
     volumes:
       - ./public/config.json:/app/public/config.json:ro
 ```
@@ -74,6 +75,7 @@ You can use `scripts/push_docker.sh` to push the image to your own registry—ju
 
   * `PORT`: The port the service listens on (default 3234).
   * `lang`: Default language; `en` by default. If a custom i18n configuration is mounted, you may set this to `zh` or others.
+  * `VITE_SITE_TITLE`: Custom text for the top-left logo (defaults to `HELIXS`).
 
 ## FAQ
 

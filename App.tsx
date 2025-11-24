@@ -6,11 +6,14 @@ import { services as defaultServices } from './data';
 import { NetworkMode, ServiceApp } from './types';
 import { useLanguage } from './context/LanguageContext';
 
+const DEFAULT_SITE_TITLE = 'HELIXS';
+
 const App: React.FC = () => {
   const [networkMode, setNetworkMode] = useState<NetworkMode>('WAN');
   const [isLoaded, setIsLoaded] = useState(false);
   const [servicesData, setServicesData] = useState<ServiceApp[]>([]);
   const [configLoaded, setConfigLoaded] = useState(false);
+  const [siteTitle, setSiteTitle] = useState(DEFAULT_SITE_TITLE);
   const { t } = useLanguage();
 
   useEffect(() => {
@@ -45,6 +48,29 @@ const App: React.FC = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    const fetchTitle = async () => {
+      try {
+        const response = await fetch('/api/title');
+        if (!response.ok) {
+          throw new Error('Failed to fetch title');
+        }
+        const data = await response.json();
+        if (data?.title) {
+          setSiteTitle(data.title);
+        }
+      } catch (error) {
+        console.warn('Falling back to default site title.', error);
+      }
+    };
+
+    fetchTitle();
+  }, []);
+
+  useEffect(() => {
+    document.title = DEFAULT_SITE_TITLE;
+  }, []);
+
   return (
     <div className="bg-void min-h-screen text-gray-200 font-sans selection:bg-neon-cyan selection:text-black overflow-hidden relative">
       
@@ -52,7 +78,7 @@ const App: React.FC = () => {
 
       {/* Main Content */}
       <main className={`transition-opacity duration-1000 ${isLoaded && configLoaded ? 'opacity-100' : 'opacity-0'}`}>
-         {configLoaded && <DNAHelix services={servicesData} networkMode={networkMode} />}
+         {configLoaded && <DNAHelix services={servicesData} networkMode={networkMode} siteTitle={siteTitle} />}
       </main>
 
       {/* Intro Overlay / Loader */}
@@ -74,7 +100,7 @@ const App: React.FC = () => {
              </div>
              
              <div className="text-center z-10">
-                 <h2 className="font-display font-bold text-3xl text-white tracking-[0.5em] mb-2">HELIXS</h2>
+                 <h2 className="font-display font-bold text-3xl text-white tracking-[0.5em] mb-2">{siteTitle}</h2>
                  <div className="font-mono text-neon-cyan/70 text-xs animate-pulse">
                    {configLoaded ? t('system_init') : t('loading_protocols')}
                  </div>

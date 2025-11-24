@@ -45,6 +45,10 @@ app.get('/api/lang', (_req, res) => {
   res.json({ lang: DEFAULT_LANG });
 });
 
+app.get('/api/title', (_req, res) => {
+  res.json({ title: process.env.title || 'HELIXS' });
+});
+
 // Serve static files from the build directory
 app.use(express.static(path.join(__dirname, 'dist')));
 

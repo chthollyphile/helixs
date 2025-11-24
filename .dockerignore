@@ -1,1 +1,11 @@
-��^�j�W�v+-���	譞�hrG���&��)�D@0t
+node_modules
+dist
+npm-debug.log
+yarn.lock
+pnpm-lock.yaml
+.git
+.gitignore
+.vscode
+.env
+.env.*
+coverage

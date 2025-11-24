@@ -10,9 +10,10 @@ import { Language } from '../i18n/locales';
 interface DNAHelixProps {
   services: ServiceApp[];
   networkMode: NetworkMode;
+  siteTitle: string;
 }
 
-const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
+const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode, siteTitle }) => {
   const { t } = useLanguage();
   // State for Overview Mode (initially true)
   const [isOverview, setIsOverview] = useState(true);
@@ -332,6 +333,7 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
             services={services} 
             viewState={isGenomeView ? 'genome' : isOverview ? 'grid' : 'expand'}
             onToggleView={cycleView}
+            siteTitle={siteTitle}
         />
 
         {/* GENOME SEQUENCE VIEW OVERLAY */}
@@ -741,9 +743,10 @@ interface HUDProps {
     services: ServiceApp[];
     viewState: 'genome' | 'grid' | 'expand';
     onToggleView: () => void;
+    siteTitle: string;
 }
 
-const HUD: React.FC<HUDProps> = ({ currentIndex, total, services, viewState, onToggleView }) => {
+const HUD: React.FC<HUDProps> = ({ currentIndex, total, services, viewState, onToggleView, siteTitle }) => {
     const { t, language, setLanguage } = useLanguage();
     const [displayIndex, setDisplayIndex] = useState(0);
     
@@ -782,7 +785,7 @@ const HUD: React.FC<HUDProps> = ({ currentIndex, total, services, viewState, onT
                     className="text-4xl md:text-6xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-neon-cyan to-white tracking-tighter drop-shadow-[0_0_15px_rgba(0,243,255,0.4)] cursor-pointer"
                     onClick={onToggleView}
                 >
-                    HELIXS
+                    {siteTitle}
                 </h1>
                 <div className="flex flex-wrap items-center gap-4 mt-2">
                      <span className="text-neon-cyan/60 font-mono text-xs tracking-[0.3em] uppercase">{t('subtitle')}</span>
