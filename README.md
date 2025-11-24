@@ -1,10 +1,13 @@
+
+![HelixS Preview](./img/helixs.png)
+
 # Helixs
 
 A futuristic, wireframe-style navigation interface for homelab services, featuring a DNA-helix interaction model and dynamic LAN/WAN routing.
 
 Check out the [Demo](https://helixs-preview.vercel.app/)
 
-![HelixS Preview](./img/helixs.png)
+https://github.com/user-attachments/assets/ec7fd49e-2259-4f50-9bcd-8776789c390e
 
 ## How to use
 
