@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, useSpring, useTransform, useMotionValue, MotionValue } from 'framer-motion';
-import { Grid, Search, ArrowRight, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { motion, useSpring, useTransform, useMotionValue, MotionValue, AnimatePresence } from 'framer-motion';
+import { Grid, Search, Dna, FileCode, Layers } from 'lucide-react';
 import { ServiceApp, NetworkMode } from '../types';
 import HelixCard from './HelixCard';
 
@@ -12,6 +12,8 @@ interface DNAHelixProps {
 const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
   // State for Overview Mode (initially true)
   const [isOverview, setIsOverview] = useState(true);
+  // State for Genome View (Text Matrix Mode)
+  const [isGenomeView, setIsGenomeView] = useState(false);
   
   // Motion value for overview transition (1 = Overview, 0 = Focused)
   const overviewProgress = useSpring(isOverview ? 1 : 0, {
@@ -48,10 +50,10 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
 
   // Reset to center when entering overview
   useEffect(() => {
-    if (isOverview) {
+    if (isOverview && !isGenomeView) {
       setTargetIndex(centerIndex);
     }
-  }, [isOverview, centerIndex, services.length]);
+  }, [isOverview, isGenomeView, centerIndex, services.length]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   
@@ -119,6 +121,7 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
         if (matchIndex !== -1) {
             setTargetIndex(matchIndex);
             setIsOverview(false);
+            setIsGenomeView(false);
             // Close search
             setIsSearching(false);
             setSearchQuery('');
@@ -145,8 +148,8 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
 
     // --- MOUSE WHEEL ---
     const handleWheel = (e: WheelEvent) => {
-        // Prevent gestures if searching
-        if (isSearching) return;
+        // Prevent gestures if searching or in genome view
+        if (isSearching || isGenomeView) return;
 
         e.preventDefault();
 
@@ -155,16 +158,16 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
         const absY = Math.abs(deltaY);
 
         // --- MODE SWITCHING (Vertical Swipe) ---
-        // Threshold prevents accidental switching while scrolling diagonally
+        // Only switch between Expand (Focus) and Grid (Overview) via scroll
         if (absY > absX && absY > 20) {
-            if (deltaY < 0 && !isOverview) {
+            if (deltaY < 0) {
                 // Swipe UP (Scroll Up) -> Go to Overview
-                setIsOverview(true);
+                if (!isOverview) setIsOverview(true);
                 return;
             } 
-            if (deltaY > 0 && isOverview) {
-                // Swipe DOWN (Scroll Down) -> Go to Focus (Expand)
-                setIsOverview(false);
+            if (deltaY > 0) {
+                // Swipe DOWN (Scroll Down) -> Go to Focus
+                if (isOverview) setIsOverview(false);
                 return;
             }
         }
@@ -176,7 +179,7 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
             // Clearly horizontal scroll
             moveDelta = deltaX;
         } else if (!isOverview && absY < 20) {
-            // In focus mode, allow gentle vertical wheel to scroll sideways (usability fallback)
+            // In focus mode, allow gentle vertical wheel to scroll sideways
             moveDelta = deltaY;
         } else if (isOverview && absY < 20) {
              // In overview, gentle vertical wheel also moves sideways
@@ -203,8 +206,7 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-        // Prevent default scrolling behavior to allow custom gestures
-        if(!isSearching && e.cancelable) {
+        if(!isSearching && !isGenomeView && e.cancelable) {
             e.preventDefault();
         }
         
@@ -221,30 +223,29 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
             else if (Math.abs(deltaY) > 10) axisLockRef.current = 'y';
         }
 
-        if (axisLockRef.current === 'x') {
-            // Natural scrolling: Drag Left -> Move Right (Next Items) -> Index Increases
-            // Sensitivity Logic:
-            // Focus Mode: Spacing is ~360px. Moving 300px should roughly equal 1 index.
-            // Overview Mode: Items are denser. 
+        // Only allow horizontal dragging if NOT in Genome View
+        if (axisLockRef.current === 'x' && !isGenomeView) {
             const pxPerIndex = isOverview ? 100 : 300; 
-            
             const indexChange = deltaX / pxPerIndex;
-            // Subtract delta because dragging LEFT (negative) should add to index
             const newIndex = startDragIndexRef.current - indexChange;
-            
             setTargetIndex(Math.max(-0.5, Math.min(services.length - 0.5, newIndex)));
         }
     };
 
     const handleTouchEnd = (e: TouchEvent) => {
-        if (!touchStartRef.current || isSearching) return;
+        if (!touchStartRef.current || isSearching || isGenomeView) return;
         
         // If Y-axis lock, check for swipe triggers
         if (axisLockRef.current === 'y') {
              const deltaY = e.changedTouches[0].clientY - touchStartRef.current.y;
              if (Math.abs(deltaY) > 50) {
-                if (deltaY < 0 && !isOverview) setIsOverview(true);
-                else if (deltaY > 0 && isOverview) setIsOverview(false);
+                if (deltaY < 0) {
+                    // Swipe Up -> Overview
+                    if (!isOverview) setIsOverview(true);
+                } else {
+                    // Swipe Down -> Focus
+                    if (isOverview) setIsOverview(false);
+                }
              }
         } else {
             // Horizontal or Tap -> Snap to nearest index
@@ -268,11 +269,28 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
         container.removeEventListener('touchmove', handleTouchMove);
         container.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [isOverview, services.length, isSearching]);
+  }, [isOverview, isGenomeView, services.length, isSearching]);
 
   const handleNodeClick = (index: number) => {
     setTargetIndex(index);
     setIsOverview(false);
+    setIsGenomeView(false);
+  };
+
+  const cycleView = () => {
+    if (!isOverview && !isGenomeView) {
+        // Expand -> Grid
+        setIsOverview(true);
+        setIsGenomeView(false);
+    } else if (isOverview && !isGenomeView) {
+        // Grid -> Genome
+        setIsOverview(false); // Hide 3D view
+        setIsGenomeView(true);
+    } else {
+        // Genome -> Expand
+        setIsGenomeView(false);
+        setIsOverview(false);
+    }
   };
 
   // Preview match for search UI
@@ -290,9 +308,29 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
             currentIndex={smoothIndex} 
             total={services.length} 
             services={services} 
-            isOverview={isOverview}
-            onToggleOverview={() => setIsOverview(!isOverview)}
+            viewState={isGenomeView ? 'genome' : isOverview ? 'grid' : 'expand'}
+            onToggleView={cycleView}
         />
+
+        {/* GENOME SEQUENCE VIEW OVERLAY */}
+        <AnimatePresence>
+            {isGenomeView && (
+                <GenomeOverlay 
+                    services={services} 
+                    onSelect={(index) => {
+                        setTargetIndex(index);
+                        setIsGenomeView(false);
+                        setIsOverview(false); // Go straight to focus
+                    }}
+                    onClose={() => {
+                        // Clicking blank space exits to expand view
+                        setIsGenomeView(false);
+                        setIsOverview(false);
+                    }}
+                />
+            )}
+        </AnimatePresence>
+
 
         {/* --- SEARCH UI OVERLAY --- */}
         {isSearching && (
@@ -338,7 +376,11 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
         )}
 
         {/* Interaction Zone - Center Line */}
-        <div className="relative w-full h-full md:h-[60%] flex items-center justify-center pointer-events-none mb-10 md:mb-0">
+        <motion.div 
+            className="relative w-full h-full md:h-[60%] flex items-center justify-center pointer-events-none mb-10 md:mb-0"
+            animate={{ opacity: isGenomeView ? 0 : 1 }}
+            transition={{ duration: 0.5 }}
+        >
             
             {/* Central Axis Line */}
             <motion.div 
@@ -357,22 +399,128 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
                     onClick={() => handleNodeClick(index)}
                 />
             ))}
-        </div>
+        </motion.div>
         
         {/* Helper Text */}
         <motion.div 
             className="absolute bottom-8 left-0 w-full text-center text-[10px] text-neon-cyan/40 font-mono tracking-[0.5em] uppercase pointer-events-auto cursor-pointer select-none z-50"
-            animate={{ opacity: [0.5, 1, 0.5] }}
+            animate={{ opacity: isGenomeView ? 0 : [0.5, 1, 0.5] }}
             transition={{ duration: 3, repeat: Infinity }}
             onClick={() => setIsSearching(true)}
         >
             {isSearching 
                 ? "PRESS ENTER TO JUMP • ESC TO CANCEL"
-                : (isOverview ? "Swipe Down to Expand • Drag to Navigate • Tap to Search" : "Swipe Up for Overview • Drag to Navigate • Tap to Search")
+                : (isOverview ? "Tap to Search • Swipe Down to Focus" : "Tap to Search • Swipe Up for Overview")
             }
         </motion.div>
     </div>
   );
+};
+
+// --- GENOME OVERLAY COMPONENT (Dense Text Matrix) ---
+const GenomeOverlay = ({ 
+    services, 
+    onSelect, 
+    onClose 
+}: { 
+    services: ServiceApp[], 
+    onSelect: (index: number) => void,
+    onClose: () => void
+}) => {
+    
+    // Create the matrix content only once on mount
+    const matrixContent = useMemo(() => {
+        const generateNoise = (len: number) => {
+            let s = "";
+            const chars = "ATCG";
+            for(let i=0; i<len; i++) s += chars.charAt(Math.floor(Math.random()*chars.length));
+            return s;
+        };
+
+        const items = [];
+        // Insert random noise before first item
+        items.push({ type: 'noise', text: generateNoise(Math.floor(Math.random() * 200) + 100) });
+
+        services.forEach((service, i) => {
+            items.push({ type: 'service', data: service, index: i });
+            // Insert random noise between items
+            items.push({ type: 'noise', text: generateNoise(Math.floor(Math.random() * 300) + 150) });
+        });
+        
+        // Fill trailing space
+        items.push({ type: 'noise', text: generateNoise(500) });
+        
+        return items;
+    }, [services]);
+
+    return (
+        <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-[200] bg-void flex items-center justify-center overflow-hidden cursor-crosshair"
+            onClick={onClose}
+        >
+             {/* Background Grid */}
+             <div className="absolute inset-0 z-0 opacity-10 pointer-events-none" 
+                 style={{ backgroundImage: 'linear-gradient(#00f3ff 1px, transparent 1px), linear-gradient(90deg, #00f3ff 1px, transparent 1px)', backgroundSize: '40px 40px' }} 
+             />
+
+             {/* Wireframe Container */}
+             <div className="relative z-10 w-[90vw] h-[80vh] border border-neon-cyan/30 p-1 flex flex-col bg-black/80 backdrop-blur-md" onClick={e => e.stopPropagation()}>
+                
+                {/* Decorative Corners */}
+                <div className="absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 border-neon-cyan"></div>
+                <div className="absolute -top-1 -right-1 w-4 h-4 border-t-2 border-r-2 border-neon-cyan"></div>
+                <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-2 border-l-2 border-neon-cyan"></div>
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-neon-cyan"></div>
+
+                {/* Header */}
+                <div className="h-6 bg-neon-cyan/10 flex items-center justify-between px-2 mb-2 border-b border-neon-cyan/20">
+                     <div className="flex items-center gap-2 text-[10px] text-neon-cyan font-mono tracking-widest">
+                        <Dna size={12} />
+                        <span>GENOME_SEQUENCE_MAP // V.2.0</span>
+                     </div>
+                     <div className="text-[10px] text-neon-cyan/50 font-mono">
+                        {services.length} ACTIVE SEQUENCES
+                     </div>
+                </div>
+
+                {/* Dense Text Content */}
+                <div className="flex-1 overflow-hidden relative p-4">
+                     <div className="w-full h-full break-all font-mono text-xs md:text-sm leading-tight text-justify opacity-80 select-none">
+                        {matrixContent.map((item, i) => {
+                            if (item.type === 'noise') {
+                                return <span key={i} className="text-gray-800 transition-colors duration-1000">{item.text}</span>;
+                            } else if (item.type === 'service') {
+                                return (
+                                    <span 
+                                        key={i} 
+                                        className="inline-block px-1 mx-1 font-bold text-neon-cyan hover:bg-neon-cyan hover:text-black cursor-pointer transition-all duration-200 border border-transparent hover:border-neon-cyan"
+                                        onClick={(e) => {
+                                            e.stopPropagation(); // Don't close overlay on click
+                                            onSelect(item.index!);
+                                        }}
+                                    >
+                                        {item.data!.name}
+                                    </span>
+                                );
+                            }
+                            return null;
+                        })}
+                     </div>
+                </div>
+
+                {/* Footer */}
+                <div className="h-6 mt-2 border-t border-neon-cyan/20 flex items-center justify-center">
+                    <span className="text-[8px] text-neon-cyan/40 font-mono tracking-[0.5em] animate-pulse">
+                        CLICK SEQUENCE TO DECODE // CLICK VOID TO ABORT
+                    </span>
+                </div>
+             </div>
+        </motion.div>
+    );
 };
 
 interface HelixNodeProps {
@@ -564,11 +712,11 @@ interface HUDProps {
     currentIndex: MotionValue<number>;
     total: number;
     services: ServiceApp[];
-    isOverview: boolean;
-    onToggleOverview: () => void;
+    viewState: 'genome' | 'grid' | 'expand';
+    onToggleView: () => void;
 }
 
-const HUD: React.FC<HUDProps> = ({ currentIndex, total, services, isOverview, onToggleOverview }) => {
+const HUD: React.FC<HUDProps> = ({ currentIndex, total, services, viewState, onToggleView }) => {
     const [displayIndex, setDisplayIndex] = useState(0);
     
     useEffect(() => {
@@ -580,13 +728,25 @@ const HUD: React.FC<HUDProps> = ({ currentIndex, total, services, isOverview, on
 
     const currentService = services[displayIndex];
 
+    const getButtonLabel = () => {
+        if (viewState === 'expand') return 'GRID VIEW';
+        if (viewState === 'grid') return 'GENOME VIEW';
+        return 'EXPAND VIEW';
+    };
+
+    const getButtonIcon = () => {
+        if (viewState === 'expand') return <Grid size={12} />;
+        if (viewState === 'grid') return <FileCode size={12} />;
+        return <Layers size={12} />;
+    };
+
     return (
         <div className="absolute top-0 left-0 w-full p-6 md:p-12 pointer-events-none flex justify-between items-start z-50">
             {/* Header / Logo */}
-            <div className="pointer-events-auto">
+            <div className="pointer-events-auto" style={{ opacity: viewState === 'genome' ? 0.2 : 1, transition: 'opacity 0.5s' }}>
                 <h1 
                     className="text-4xl md:text-6xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-neon-cyan to-white tracking-tighter drop-shadow-[0_0_15px_rgba(0,243,255,0.4)] cursor-pointer"
-                    onClick={onToggleOverview}
+                    onClick={onToggleView}
                 >
                     HELIXS
                 </h1>
@@ -594,11 +754,11 @@ const HUD: React.FC<HUDProps> = ({ currentIndex, total, services, isOverview, on
                      <span className="text-neon-cyan/60 font-mono text-xs tracking-[0.3em] uppercase">Homelab Nav System v2.0</span>
                      <div className="h-[1px] w-12 md:w-20 bg-neon-cyan/30"></div>
                      <button 
-                        onClick={onToggleOverview}
-                        className={`pointer-events-auto flex items-center gap-2 px-3 py-1 border border-neon-cyan/30 bg-black/50 backdrop-blur-sm text-[10px] font-mono uppercase tracking-wider transition-all hover:bg-neon-cyan/10 hover:border-neon-cyan ${isOverview ? 'text-neon-cyan border-neon-cyan' : 'text-gray-500'}`}
+                        onClick={onToggleView}
+                        className={`pointer-events-auto flex items-center gap-2 px-3 py-1 border border-neon-cyan/30 bg-black/50 backdrop-blur-sm text-[10px] font-mono uppercase tracking-wider transition-all hover:bg-neon-cyan/10 hover:border-neon-cyan ${viewState === 'expand' ? 'text-gray-500' : 'text-neon-cyan border-neon-cyan'}`}
                      >
-                        <Grid size={12} />
-                        {isOverview ? 'EXPAND VIEW' : 'GRID VIEW'}
+                        {getButtonIcon()}
+                        {getButtonLabel()}
                      </button>
                 </div>
             </div>
@@ -606,7 +766,7 @@ const HUD: React.FC<HUDProps> = ({ currentIndex, total, services, isOverview, on
             {/* Detail Info - Fades out in Overview */}
             <motion.div 
                 className="text-right hidden md:block"
-                animate={{ opacity: isOverview ? 0 : 1, x: isOverview ? 20 : 0 }}
+                animate={{ opacity: viewState !== 'expand' ? 0 : 1, x: viewState !== 'expand' ? 20 : 0 }}
                 transition={{ duration: 0.5 }}
             >
                  <div className="text-3xl font-display font-bold text-neon-cyan mb-1">

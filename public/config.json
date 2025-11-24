@@ -109,6 +109,28 @@
       "wanUrl": "https://cloud.homelab.com",
       "status": "online",
       "stats": [{ "label": "Storage", "value": "500GB" }]
+    },
+    {
+      "id": "11",
+      "name": "INTERNET CHECK",
+      "description": "External connectivity verification (Google).",
+      "icon": "Globe",
+      "category": "network",
+      "lanUrl": "https://www.google.com",
+      "wanUrl": "https://www.google.com",
+      "status": "online",
+      "stats": []
+    },
+    {
+      "id": "12",
+      "name": "LOCAL TEST",
+      "description": "Internal IP connectivity verification.",
+      "icon": "Server",
+      "category": "network",
+      "lanUrl": "http://192.168.50.141",
+      "wanUrl": "http://192.168.50.141",
+      "status": "offline",
+      "stats": []
     }
   ]
 }
