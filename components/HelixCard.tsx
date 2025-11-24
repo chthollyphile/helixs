@@ -111,6 +111,12 @@ const HelixCard: React.FC<HelixCardProps> = ({ app, activeStrength, networkMode 
                     : realTimeStatus === 'maintenance' ? 'bg-yellow-500 shadow-[0_0_8px_orange]'
                     : 'bg-red-500 shadow-[0_0_8px_red]';
 
+  const handleCardKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'Enter') return;
+    // Matches clicking the button so keyboard users get same behavior
+    window.open(currentUrl, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <div className="relative flex items-center justify-center w-[340px] max-w-[90vw] h-[240px]">
       
@@ -132,6 +138,9 @@ const HelixCard: React.FC<HelixCardProps> = ({ app, activeStrength, networkMode 
           boxShadow: '0 0 30px rgba(0, 243, 255, 0.15)',
           clipPath: 'polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px)',
         }}
+        role="button"
+        tabIndex={0}
+        onKeyDown={handleCardKeyDown}
       >
          {/* Decorative Grid Inside */}
         <div className="absolute inset-0 opacity-10 pointer-events-none" 

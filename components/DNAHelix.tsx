@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { motion, useSpring, useTransform, useMotionValue, MotionValue, AnimatePresence } from 'framer-motion';
 import { Grid, Search, ArrowRight, ArrowLeft, Dna, FileCode, Layers, Globe } from 'lucide-react';
 import { ServiceApp, NetworkMode } from '../types';
+import { getActiveUrl } from '../utils/network';
 import HelixCard from './HelixCard';
 import { useLanguage } from '../context/LanguageContext';
 import { Language } from '../i18n/locales';
@@ -70,11 +71,27 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  const openActiveService = useCallback(() => {
+    if (!services.length) return;
+    const idx = Math.round(targetIndexRef.current);
+    const clamped = Math.max(0, Math.min(services.length - 1, idx));
+    const activeService = services[clamped];
+    if (!activeService) return;
+    const url = getActiveUrl(activeService, networkMode);
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }, [services, networkMode]);
+
   // Global Keydown Listener to start search AND handle navigation
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
         // Ignore if search is already active
         if (isSearching) return;
+
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            openActiveService();
+            return;
+        }
 
         // --- NAVIGATION ---
         if (e.key === 'ArrowLeft') {
@@ -103,7 +120,7 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
 
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [isSearching, services.length]);
+  }, [isSearching, services.length, openActiveService]);
 
   // Auto-focus input when search starts
   useEffect(() => {
@@ -115,6 +132,7 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
   const handleSearchKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
         e.preventDefault();
+        e.stopPropagation();
         // Fuzzy Search Logic
         const matchIndex = services.findIndex(s => 
             s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -130,6 +148,7 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
             setSearchQuery('');
         }
     } else if (e.key === 'Escape') {
+        e.stopPropagation();
         setIsSearching(false);
         setSearchQuery('');
     }
@@ -441,7 +460,11 @@ const GenomeOverlay = ({
             return s;
         };
 
-        const items = [];
+        type MatrixItem = 
+            | { type: 'noise'; text: string }
+            | { type: 'service'; data: ServiceApp; index: number };
+
+        const items: MatrixItem[] = [];
         // Insert random noise before first item
         items.push({ type: 'noise', text: generateNoise(Math.floor(Math.random() * 200) + 100) });
 
