@@ -52,6 +52,35 @@ app.get('/api/title', (_req, res) => {
 // Serve static files from the build directory
 app.use(express.static(path.join(__dirname, 'dist')));
 
+const dockerHostIp = process.env.docker_host_ip;
+const dockerLoopbackHost = '172.17.0.1';
+const TLS_ERROR_CODES = new Set([
+  'DEPTH_ZERO_SELF_SIGNED_CERT',
+  'ERR_TLS_CERT_ALTNAME_INVALID',
+  'ERR_TLS_CERT_SIGNATURE_ALGORITHM_UNSUPPORTED',
+  'ERR_TLS_DH_PARAM_SIZE',
+  'ERR_TLS_CERT_ALTNAME_FORMAT',
+  'ERR_TLS_INVALID_PROTOCOL_VERSION',
+  'ERR_TLS_SELF_SIGNED_CERT_IN_CHAIN',
+  'SELF_SIGNED_CERT_IN_CHAIN',
+  'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
+]);
+
+const isCertificateError = (error) => {
+  const code = error?.cause?.code || error?.code;
+  if (code && TLS_ERROR_CODES.has(code)) {
+    return true;
+  }
+
+  const message = (error?.cause?.message || error?.message || '').toLowerCase();
+  return (
+    message.includes('self signed certificate') ||
+    message.includes('certificate has expired') ||
+    message.includes('unable to verify the first certificate') ||
+    message.includes('cert') // fallback
+  );
+};
+
 // API Endpoint for Status Checks
 app.get('/api/status', async (req, res) => {
     const { url } = req.query;
@@ -60,27 +89,39 @@ app.get('/api/status', async (req, res) => {
         return res.status(400).json({ status: 'error', message: 'Missing URL parameter' });
     }
 
-    try {
-        // Use a short timeout to prevent hanging
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
 
-        // We use 'HEAD' to check existence without downloading body
-        // Note: Some services might not support HEAD, fallback to GET if needed, 
-        // but HEAD is faster and lighter.
-        const response = await fetch(url, {
+    try {
+        const parsedUrl = new URL(url);
+        if (dockerHostIp && parsedUrl.hostname === dockerHostIp) {
+            // console.log('Replacing hostname with Docker loopback host');
+            parsedUrl.hostname = dockerLoopbackHost;
+            // console.log('parsedUrl after replacement', parsedUrl);
+        }
+
+        const response = await fetch(parsedUrl.toString(), {
             method: 'HEAD',
             signal: controller.signal
         });
-        
-        clearTimeout(timeoutId);
 
-        // If we got a response (even 401, 403, 500), the service is reachable ("online")
-        // We only consider it "offline" if the network connection fails completely.
+        // console.log('response', response);
+
         res.json({ status: 'online', code: response.status });
     } catch (error) {
-        // Network error, DNS error, timeout -> Offline
+        if (isCertificateError(error)) {
+            // console.log('TLS certificate error detected, treating as online', error);
+            return res.json({ status: 'online', code: 'TLS_ERROR' });
+        }
+
+        if (error?.name === 'AbortError') {
+            // console.log('Status check timed out');
+        } else {
+            // console.log('error', error);
+        }
         res.json({ status: 'offline' });
+    } finally {
+        clearTimeout(timeoutId);
     }
 });
 
