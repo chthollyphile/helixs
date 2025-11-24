@@ -1,66 +1,87 @@
-# HelixS
+# Helixs
 
-A futuristic, wireframe-style 3D navigation interface for homelab services featuring a DNA-helix interaction model and dynamic LAN/WAN routing.
+A futuristic, wireframe-style navigation interface for homelab services, featuring a DNA-helix interaction model and dynamic LAN/WAN routing.
 
-![HelixS Preview](https://placehold.co/800x400/050505/00f3ff?text=HelixS+Preview)
+Check out the [Demo](https://helixs-preview.vercel.app/)
 
-## 部署方式
+![HelixS Preview](./img/helixs.png)
 
-- **Vercel 一键部署**  
-  点击下方按钮，选择自己的仓库即可。首次部署后，在 Vercel 控制台设置 `lang`（可选）等环境变量。  
-  [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fchthollyphile%2Fhelixs)
+## How to use
 
-- **本地/服务器 Node 部署**  
-  1. 克隆仓库并进入目录  
-     ```bash
-     git clone <your-repo> helixs && cd helixs
-     ```
-  2. 安装依赖：`npm install`  
-  3. 开发调试：`npm run dev`（默认 <http://localhost:5173>）  
-  4. 生产构建：`npm run build`  
-  5. 启动服务端渲染入口：`npm start`（默认监听 3234 端口，可用 `PORT` 环境变量覆盖）
+1. Visit the deployed address to view the navigation panel.
+2. Scroll using mouse or touchpad to browse all service nodes; click to jump to the corresponding LAN/WAN address.
+3. Typing on the keyboard will automatically trigger search to filter service names quickly.
+4. When in GENOME VIEW, click the "GENOME VIEW" button to display all services in a text matrix.
 
-- **Docker 部署**  
-  ```bash
-  docker build -t helixs:latest .
-  docker run -d --name helixs \
-    -e PORT=3234 \
-    -e lang=en \
-    -p 3234:3234 \
-    -v $(pwd)/public/config.json:/app/public/config.json:ro \
-    helixs:latest
-  ```
-  `scripts/push_docker.sh` 可将镜像推送到自己的仓库，记得先在脚本里替换镜像名。
+## Deployment Methods
 
-- **Docker Compose**  
-  ```bash
-  docker compose up -d
-  ```
-  根据需要修改 `docker-compose.yml` 中的端口、环境变量与挂载路径。
+### One-click Vercel Deployment
+Click the button below and select your repository. After the first deployment, configure environment variables such as `lang` (optional) in the Vercel dashboard.
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fchthollyphile%2Fhelixs)
 
-## 配置
+### Docker Compose Deployment
+Use the provided `docker-compose.yml` template, adjust values as needed, and then run `docker compose up -d`.
 
-- 所有服务展示项来自 `public/config.json`。  
-  - `lanUrl` 与 `wanUrl` 决定在局域网或外网访问时跳转的地址。  
-  - `status`、`stats` 字段用于面板上的状态提示。  
-  - 修改后无需重启容器，只要文件仍以只读方式挂载即可随时更新。
-- 环境变量
-  - `PORT`：服务监听端口（默认 3234）。  
-  - `lang`：预设语种，默认为 `en`，若挂载自定义 i18n 配置可改为 `zh` 等。
+```yaml
+services:
+  helixs:
+    image: papersman/helixs:latest
+    restart: unless-stopped
+    ports:
+      - "3234:3234"
+    environment:
+      - lang=en
+    volumes:
+      - ./public/config.json:/app/public/config.json:ro
+```
 
-## 使用说明
+### Local/Server Node Deployment
+1. Clone the repository and enter the directory:
 
-1. 访问部署地址即可看到 3D 导航面板。  
-2. 鼠标或触控板滚动可浏览所有服务节点，点击后跳转到对应的 LAN/WAN 地址。  
-3. 键盘输入会自动开启搜索，快速筛选服务名称。  
-4. 若需要展示家庭实验室实时信息，只需更新 `public/config.json` 的 `stats` 与 `status` 字段，无须重新打包。
+   ```bash
+   git clone <your-repo> helixs && cd helixs
+   ```
+2. Install dependencies: `npm install`
+3. Development mode: `npm run dev` (defaults to [http://localhost:5173](http://localhost:5173))
+4. Production build: `npm run build`
+5. Start the server-side rendering entry: `npm start` (listens on port 3234 by default; override with the `PORT` environment variable)
 
-## 常见问题
+### Docker Deployment
+```bash
+docker build -t helixs:latest .
+docker run -d --name helixs \
+  -e PORT=3234 \
+  -e lang=en \
+  -p 3234:3234 \
+  -v $(pwd)/public/config.json:/app/public/config.json:ro \
+  helixs:latest
+```
 
-- **如何同步配置到线上实例？**  
-  - Node 或 Docker 本地部署：直接编辑 `public/config.json` 并重启/热加载。  
-  - Vercel：建议将配置文件存入仓库并重新触发构建，或使用 Vercel KV/Edge Config 等外部数据源。
+You can use `scripts/push_docker.sh` to push the image to your own registry—just remember to replace the image name in the script.
 
-- **如何清理与升级？**  
-  - Node 部署：`git pull && npm install && npm run build && npm start`。  
-  - Docker 部署：重新构建镜像，使用 `docker compose up -d --build` 或 `docker run --pull always`。
+## Configuration
+
+* All service items displayed are sourced from `public/config.json`.
+
+  * `lanUrl` and `wanUrl` determine which address to redirect to when accessed via LAN or WAN.
+  * The `status` and `stats` fields are used for status indicators on the panel.
+  * No container restart is required after modification, as long as the file is still mounted read-only.
+
+* Environment Variables
+
+  * `PORT`: The port the service listens on (default 3234).
+  * `lang`: Default language; `en` by default. If a custom i18n configuration is mounted, you may set this to `zh` or others.
+
+## FAQ
+
+* **How do I sync configuration to a deployed instance?**
+
+  * Local Node or Docker deployment: edit `public/config.json` directly and restart/hot-reload.
+  * Vercel: store the configuration file in the repository and trigger a rebuild, or use external data sources such as Vercel KV/Edge Config.
+
+* **How do I clean up or upgrade?**
+
+  * Node deployment: `git pull && npm install && npm run build && npm start`.
+  * Docker deployment: rebuild the image using `docker compose up -d --build` or run with `docker run --pull always`.
+
+---
