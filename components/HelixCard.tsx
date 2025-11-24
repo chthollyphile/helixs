@@ -9,18 +9,20 @@ interface HelixCardProps {
   app: ServiceApp;
   activeStrength: MotionValue<number>; // 0 to 1 (1 is fully focused)
   networkMode: NetworkMode;
+  altMode?: boolean;
 }
 
-const HelixCard: React.FC<HelixCardProps> = ({ app, activeStrength, networkMode }) => {
+const HelixCard: React.FC<HelixCardProps> = ({ app, activeStrength, networkMode, altMode }) => {
   const { t } = useLanguage();
   // @ts-ignore
   const IconComponent = Icons[app.icon] || Icons.HelpCircle;
   const currentUrl = getActiveUrl(app, networkMode);
   
   // State for automated checks
-  const [realTimeStatus, setRealTimeStatus] = useState<'online' | 'offline' | 'maintenance'>(app.status || 'offline');
+  // const [realTimeStatus, setRealTimeStatus] = useState<'online' | 'offline' | 'maintenance'>(app.status || 'offline');
+  const realTimeStatus = app.status || 'offline';
   const [currentStats, setCurrentStats] = useState(app.stats || []);
-  const [isChecking, setIsChecking] = useState(false);
+  // const [isChecking, setIsChecking] = useState(false);
 
   let hostname = '';
   try {
@@ -29,7 +31,8 @@ const HelixCard: React.FC<HelixCardProps> = ({ app, activeStrength, networkMode 
       hostname = t('unknown_host');
   }
 
-  // --- AUTOMATED STATUS CHECK ---
+  // --- AUTOMATED STATUS CHECK (Now handled by App.tsx) ---
+  /*
   useEffect(() => {
     // If manually set to maintenance, don't check
     if (app.status === 'maintenance') {
@@ -69,6 +72,7 @@ const HelixCard: React.FC<HelixCardProps> = ({ app, activeStrength, networkMode 
         clearInterval(interval);
     };
   }, [currentUrl, app.status]);
+  */
 
 
   // --- DYNAMIC STATS FETCHING ---
@@ -117,15 +121,20 @@ const HelixCard: React.FC<HelixCardProps> = ({ app, activeStrength, networkMode 
     window.open(currentUrl, '_blank', 'noopener,noreferrer');
   };
 
+  const isGrayedOut = altMode && realTimeStatus === 'offline';
+  const dotBorderClass = isGrayedOut ? "border-gray-600" : "border-neon-cyan/50";
+  const dotShadowClass = isGrayedOut ? "shadow-none" : "shadow-[0_0_15px_rgba(0,243,255,0.3)]";
+  const iconColorClass = isGrayedOut ? "text-gray-600" : "text-neon-cyan";
+
   return (
     <div className="relative flex items-center justify-center w-[340px] max-w-[90vw] h-[240px]">
       
       {/* 1. The Small Dot / Icon Representation (For distant nodes) */}
       <motion.div 
-        className="absolute flex items-center justify-center w-12 h-12 rounded-full border border-neon-cyan/50 bg-black/80 backdrop-blur-sm shadow-[0_0_15px_rgba(0,243,255,0.3)]"
+        className={`absolute flex items-center justify-center w-12 h-12 rounded-full border ${dotBorderClass} bg-black/80 backdrop-blur-sm ${dotShadowClass}`}
         style={{ opacity: dotOpacity, scale: dotScale }}
       >
-         <IconComponent size={20} className="text-neon-cyan" />
+         <IconComponent size={20} className={iconColorClass} />
       </motion.div>
 
 
@@ -159,7 +168,7 @@ const HelixCard: React.FC<HelixCardProps> = ({ app, activeStrength, networkMode 
                  </div>
             </div>
             {/* Status Indicator with Pulse if checking */}
-            <div className={`w-2 h-2 rounded-full flex-shrink-0 transition-colors duration-500 ${statusColor} ${isChecking ? 'animate-pulse' : ''}`} />
+            <div className={`w-2 h-2 rounded-full flex-shrink-0 transition-colors duration-500 ${statusColor}`} />
         </div>
 
         {/* Body */}

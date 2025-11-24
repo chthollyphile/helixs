@@ -11,9 +11,10 @@ interface DNAHelixProps {
   services: ServiceApp[];
   networkMode: NetworkMode;
   siteTitle: string;
+  altMode?: boolean;
 }
 
-const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode, siteTitle }) => {
+const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode, siteTitle, altMode }) => {
   const { t } = useLanguage();
   // State for Overview Mode (initially true)
   const [isOverview, setIsOverview] = useState(true);
@@ -341,6 +342,7 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode, siteTitle })
             {isGenomeView && (
                 <GenomeOverlay 
                     services={services} 
+                    altMode={altMode}
                     onSelect={(index) => {
                         setTargetIndex(index);
                         setIsGenomeView(false);
@@ -421,6 +423,7 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode, siteTitle })
                     networkMode={networkMode}
                     overviewProgress={overviewProgress}
                     onClick={() => handleNodeClick(index)}
+                    altMode={altMode}
                 />
             ))}
         </motion.div>
@@ -445,11 +448,13 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode, siteTitle })
 const GenomeOverlay = ({ 
     services, 
     onSelect, 
-    onClose 
+    onClose,
+    altMode
 }: { 
     services: ServiceApp[], 
     onSelect: (index: number) => void,
-    onClose: () => void
+    onClose: () => void,
+    altMode?: boolean
 }) => {
     const { t } = useLanguage();
     
@@ -523,10 +528,12 @@ const GenomeOverlay = ({
                             if (item.type === 'noise') {
                                 return <span key={i} className="text-gray-800 transition-colors duration-1000">{item.text}</span>;
                             } else if (item.type === 'service') {
+                                const isOffline = item.data!.status === 'offline';
+                                const showStrike = altMode && isOffline;
                                 return (
                                     <span 
                                         key={i} 
-                                        className="inline-block px-1 mx-1 font-bold text-neon-cyan hover:bg-neon-cyan hover:text-black cursor-pointer transition-all duration-200 border border-transparent hover:border-neon-cyan"
+                                        className={`inline-block px-1 mx-1 font-bold text-neon-cyan hover:bg-neon-cyan hover:text-black cursor-pointer transition-all duration-200 border border-transparent hover:border-neon-cyan ${showStrike ? 'line-through opacity-50' : ''}`}
                                         onClick={(e) => {
                                             e.stopPropagation(); // Don't close overlay on click
                                             onSelect(item.index!);
@@ -559,6 +566,7 @@ interface HelixNodeProps {
     networkMode: NetworkMode;
     overviewProgress: MotionValue<number>;
     onClick: () => void;
+    altMode?: boolean;
 }
 
 const HelixNode: React.FC<HelixNodeProps> = ({
@@ -567,7 +575,8 @@ const HelixNode: React.FC<HelixNodeProps> = ({
     globalIndex,
     networkMode,
     overviewProgress,
-    onClick
+    onClick,
+    altMode
 }) => {
     // Distance from the currently looked-at index
     const distanceFromCenter = useTransform(globalIndex, (v) => index - v);
@@ -708,6 +717,7 @@ const HelixNode: React.FC<HelixNodeProps> = ({
                         app={service}
                         activeStrength={activeStrength}
                         networkMode={networkMode}
+                        altMode={altMode}
                     />
                 </motion.div>
 

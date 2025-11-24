@@ -18,3 +18,13 @@ export const detectNetworkMode = (): NetworkMode => {
 export const getActiveUrl = (app: ServiceApp, mode: NetworkMode): string => {
   return mode === 'LAN' ? app.lanUrl : app.wanUrl;
 };
+
+export const checkServiceStatus = async (url: string): Promise<'online' | 'offline'> => {
+  try {
+    const response = await fetch(`/api/status?url=${encodeURIComponent(url)}`);
+    const data = await response.json();
+    return data.status === 'online' ? 'online' : 'offline';
+  } catch (error) {
+    return 'offline';
+  }
+};

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import DNAHelix from './components/DNAHelix';
 import Background from './components/Background';
-import { detectNetworkMode } from './utils/network';
+import { detectNetworkMode, checkServiceStatus, getActiveUrl } from './utils/network';
 import { services as defaultServices } from './data';
 import { NetworkMode, ServiceApp } from './types';
 import { useLanguage } from './context/LanguageContext';
@@ -14,6 +14,8 @@ const App: React.FC = () => {
   const [servicesData, setServicesData] = useState<ServiceApp[]>([]);
   const [configLoaded, setConfigLoaded] = useState(false);
   const [siteTitle, setSiteTitle] = useState(DEFAULT_SITE_TITLE);
+  const [altMode, setAltMode] = useState(false);
+  const [statuses, setStatuses] = useState<Record<string, 'online' | 'offline' | 'maintenance'>>({});
   const { t } = useLanguage();
 
   useEffect(() => {
@@ -41,12 +43,60 @@ const App: React.FC = () => {
       }
     };
 
+    const fetchEnv = async () => {
+      try {
+          const response = await fetch('/api/env');
+          if (response.ok) {
+              const data = await response.json();
+              setAltMode(!!data.alt_mode);
+          }
+      } catch (e) {
+          console.warn('Failed to fetch env', e);
+      }
+    };
+
     loadConfig();
+    fetchEnv();
     
     // Intro animation timeout
     const timer = setTimeout(() => setIsLoaded(true), 2500);
     return () => clearTimeout(timer);
   }, []);
+
+  // Poll service statuses
+  useEffect(() => {
+    if (!configLoaded || servicesData.length === 0) return;
+
+    const checkAll = async () => {
+      const newStatuses: Record<string, 'online' | 'offline' | 'maintenance'> = {};
+      
+      const promises = servicesData.map(async (service) => {
+        // If manually set to maintenance, preserve it
+        if (service.status === 'maintenance') {
+          newStatuses[service.id] = 'maintenance';
+          return;
+        }
+
+        const url = getActiveUrl(service, networkMode);
+        const status = await checkServiceStatus(url);
+        newStatuses[service.id] = status;
+      });
+
+      await Promise.all(promises);
+      setStatuses(newStatuses);
+    };
+
+    checkAll();
+    const interval = setInterval(checkAll, 60000);
+    return () => clearInterval(interval);
+  }, [configLoaded, servicesData, networkMode]);
+
+  const finalServices = useMemo(() => {
+    return servicesData.map(s => ({
+      ...s,
+      status: statuses[s.id] || s.status
+    }));
+  }, [servicesData, statuses]);
 
   useEffect(() => {
     const fetchTitle = async () => {
@@ -78,7 +128,7 @@ const App: React.FC = () => {
 
       {/* Main Content */}
       <main className={`transition-opacity duration-1000 ${isLoaded && configLoaded ? 'opacity-100' : 'opacity-0'}`}>
-         {configLoaded && <DNAHelix services={servicesData} networkMode={networkMode} siteTitle={siteTitle} />}
+         {configLoaded && <DNAHelix services={finalServices} networkMode={networkMode} siteTitle={siteTitle} altMode={altMode} />}
       </main>
 
       {/* Intro Overlay / Loader */}
