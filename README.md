@@ -38,6 +38,7 @@ services:
       # Optional envs:
       # - title=HELIXS
       # - docker_host_ip=192.168.1.100
+      # - alt_mode=true
     volumes:
       - ./public/config.json:/app/public/config.json:ro
 ```
@@ -80,6 +81,7 @@ You can use `scripts/push_docker.sh` to push the image to your own registry—ju
   * `lang`: Default language; `en` by default. If a custom i18n configuration is mounted, you may set this to `zh` or others.
   * `title`: Custom text for the top-left logo (defaults to `HELIXS`).
   * `docker_host_ip`: The IP address of the host machine where this container is running. Use this when your service and this navigation page are deployed on the same host machine, in order to resolve Docker’s network isolation issues.
+  * `alt_mode`: ; `false` by default. Controls whether offline services are shown in gray and displayed with a strikethrough effect.
 
 ## FAQ
 
