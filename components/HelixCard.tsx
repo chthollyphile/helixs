@@ -39,22 +39,19 @@ const HelixCard: React.FC<HelixCardProps> = ({ app, activeStrength, networkMode 
     const checkStatus = async () => {
         setIsChecking(true);
         try {
-            const controller = new AbortController();
-            // 2 second timeout for status check
-            const timeoutId = setTimeout(() => controller.abort(), 2000);
+            // Use our own backend API to avoid CORS/Mixed Content issues
+            // encodeURIComponent is crucial for passing URLs as parameters
+            const response = await fetch(`/api/status?url=${encodeURIComponent(currentUrl)}`);
+            const data = await response.json();
 
-            // 'no-cors' mode allows us to receive an opaque response if the server is up.
-            // If the server is down, it throws a network error.
-            await fetch(currentUrl, { 
-                mode: 'no-cors', 
-                signal: controller.signal,
-                cache: 'no-store'
-            });
-
-            clearTimeout(timeoutId);
-            if (isMounted) setRealTimeStatus('online');
+            if (isMounted) {
+                if (data.status === 'online') {
+                    setRealTimeStatus('online');
+                } else {
+                    setRealTimeStatus('offline');
+                }
+            }
         } catch (error) {
-            // Error usually means network timeout or connection refused (Offline)
             if (isMounted) setRealTimeStatus('offline');
         } finally {
             if (isMounted) setIsChecking(false);
