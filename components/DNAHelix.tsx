@@ -375,20 +375,22 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
   );
 };
 
-const HelixNode = ({
+interface HelixNodeProps {
+    index: number;
+    service: ServiceApp;
+    globalIndex: MotionValue<number>;
+    networkMode: NetworkMode;
+    overviewProgress: MotionValue<number>;
+    onClick: () => void;
+}
+
+const HelixNode: React.FC<HelixNodeProps> = ({
     index,
     service,
     globalIndex,
     networkMode,
     overviewProgress,
     onClick
-}: {
-    index: number,
-    service: ServiceApp,
-    globalIndex: MotionValue<number>,
-    networkMode: NetworkMode,
-    overviewProgress: MotionValue<number>,
-    onClick: () => void
 }) => {
     // Distance from the currently looked-at index
     const distanceFromCenter = useTransform(globalIndex, (v) => index - v);

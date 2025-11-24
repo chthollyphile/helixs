@@ -11,6 +11,7 @@ export interface ServiceApp {
     label: string;
     value: string;
   }[];
+  statsUrl?: string; // Optional URL to fetch real-time stats JSON
 }
 
 export type NetworkMode = 'LAN' | 'WAN';

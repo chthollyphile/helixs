@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, useTransform, MotionValue } from 'framer-motion';
 import * as Icons from 'lucide-react';
 import { ServiceApp, NetworkMode } from '../types';
@@ -15,6 +15,11 @@ const HelixCard: React.FC<HelixCardProps> = ({ app, activeStrength, networkMode 
   const IconComponent = Icons[app.icon] || Icons.HelpCircle;
   const currentUrl = getActiveUrl(app, networkMode);
   
+  // State for automated checks
+  const [realTimeStatus, setRealTimeStatus] = useState<'online' | 'offline' | 'maintenance'>(app.status || 'offline');
+  const [currentStats, setCurrentStats] = useState(app.stats || []);
+  const [isChecking, setIsChecking] = useState(false);
+
   let hostname = '';
   try {
       hostname = new URL(currentUrl).hostname;
@@ -22,11 +27,77 @@ const HelixCard: React.FC<HelixCardProps> = ({ app, activeStrength, networkMode 
       hostname = 'UNKNOWN_HOST';
   }
 
+  // --- AUTOMATED STATUS CHECK ---
+  useEffect(() => {
+    // If manually set to maintenance, don't check
+    if (app.status === 'maintenance') {
+        setRealTimeStatus('maintenance');
+        return;
+    }
+
+    let isMounted = true;
+    const checkStatus = async () => {
+        setIsChecking(true);
+        try {
+            const controller = new AbortController();
+            // 2 second timeout for status check
+            const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+            // 'no-cors' mode allows us to receive an opaque response if the server is up.
+            // If the server is down, it throws a network error.
+            await fetch(currentUrl, { 
+                mode: 'no-cors', 
+                signal: controller.signal,
+                cache: 'no-store'
+            });
+
+            clearTimeout(timeoutId);
+            if (isMounted) setRealTimeStatus('online');
+        } catch (error) {
+            // Error usually means network timeout or connection refused (Offline)
+            if (isMounted) setRealTimeStatus('offline');
+        } finally {
+            if (isMounted) setIsChecking(false);
+        }
+    };
+
+    checkStatus();
+    
+    // Poll every 60 seconds
+    const interval = setInterval(checkStatus, 60000);
+    return () => {
+        isMounted = false;
+        clearInterval(interval);
+    };
+  }, [currentUrl, app.status]);
+
+
+  // --- DYNAMIC STATS FETCHING ---
+  // To use this: Add a "statsUrl" property to your service configuration.
+  // The endpoint should return JSON: [{ "label": "CPU", "value": "10%" }, ...]
+  useEffect(() => {
+      if (!app.statsUrl) return;
+
+      const fetchStats = async () => {
+          try {
+              const res = await fetch(app.statsUrl!);
+              if (!res.ok) throw new Error("Stats fetch failed");
+              const data = await res.json();
+              if (Array.isArray(data)) {
+                  setCurrentStats(data);
+              }
+          } catch (e) {
+              console.warn(`Failed to fetch stats for ${app.name}`, e);
+          }
+      };
+
+      fetchStats();
+      const interval = setInterval(fetchStats, 10000); // Update stats every 10s
+      return () => clearInterval(interval);
+  }, [app.statsUrl]);
+
+
   // --- Dynamic Styles based on Active Strength ---
-  
-  // Size: When inactive (strength 0), it's small (dot). When active (1), it's full size.
-  // We handle layout size changes via scale in the parent HelixNode, 
-  // but here we manage internal layout visibility.
   
   // Opacity of the "Card" container
   const cardOpacity = useTransform(activeStrength, [0.5, 0.8], [0, 1]);
@@ -35,6 +106,11 @@ const HelixCard: React.FC<HelixCardProps> = ({ app, activeStrength, networkMode 
   // Opacity of the "Dot/Icon" representation (visible when NOT active)
   const dotOpacity = useTransform(activeStrength, [0.4, 0.6], [1, 0]);
   const dotScale = useTransform(activeStrength, [0, 0.5], [1, 0.5]);
+
+  // Color coding based on Status
+  const statusColor = realTimeStatus === 'online' ? 'bg-neon-green shadow-[0_0_8px_#0aff00]' 
+                    : realTimeStatus === 'maintenance' ? 'bg-yellow-500 shadow-[0_0_8px_orange]'
+                    : 'bg-red-500 shadow-[0_0_8px_red]';
 
   return (
     <div className="relative flex items-center justify-center w-[340px] max-w-[90vw] h-[240px]">
@@ -74,7 +150,8 @@ const HelixCard: React.FC<HelixCardProps> = ({ app, activeStrength, networkMode 
                      <span className="text-[10px] font-mono text-neon-cyan/50 tracking-[0.2em]">{app.category.toUpperCase()}</span>
                  </div>
             </div>
-            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${app.status === 'online' ? 'bg-neon-green shadow-[0_0_8px_#0aff00]' : 'bg-red-500 shadow-[0_0_8px_red]'}`} />
+            {/* Status Indicator with Pulse if checking */}
+            <div className={`w-2 h-2 rounded-full flex-shrink-0 transition-colors duration-500 ${statusColor} ${isChecking ? 'animate-pulse' : ''}`} />
         </div>
 
         {/* Body */}
@@ -84,12 +161,16 @@ const HelixCard: React.FC<HelixCardProps> = ({ app, activeStrength, networkMode 
             </p>
             
             <div className="grid grid-cols-2 gap-2 mt-auto">
-                {app.stats?.map((stat, i) => (
-                    <div key={i} className="bg-white/5 p-1.5 border border-white/5">
-                        <div className="text-[8px] text-gray-500 uppercase tracking-wider mb-0.5">{stat.label}</div>
-                        <div className="text-sm font-display text-neon-cyan truncate">{stat.value}</div>
-                    </div>
-                ))}
+                {currentStats.length > 0 ? (
+                    currentStats.map((stat, i) => (
+                        <div key={i} className="bg-white/5 p-1.5 border border-white/5">
+                            <div className="text-[8px] text-gray-500 uppercase tracking-wider mb-0.5">{stat.label}</div>
+                            <div className="text-sm font-display text-neon-cyan truncate">{stat.value}</div>
+                        </div>
+                    ))
+                ) : (
+                    <div className="col-span-2 text-[9px] text-gray-700 font-mono text-center pt-2">NO TELEMETRY DATA</div>
+                )}
             </div>
         </div>
 

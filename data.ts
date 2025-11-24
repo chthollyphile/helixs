@@ -1,5 +1,21 @@
 import { ServiceApp } from './types';
 
+/* 
+  HOW TO USE DYNAMIC STATS:
+  Add a "statsUrl" property to any service object.
+  The URL should point to an API endpoint that returns JSON in this format:
+  [
+    { "label": "CPU", "value": "20%" },
+    { "label": "RAM", "value": "4.2GB" }
+  ]
+  
+  Example:
+  {
+    ...
+    statsUrl: "http://192.168.1.10:3000/api/system-stats"
+  }
+*/
+
 export const services: ServiceApp[] = [
   {
     id: '1',
@@ -9,7 +25,7 @@ export const services: ServiceApp[] = [
     category: 'system',
     lanUrl: 'http://192.168.1.10:3000',
     wanUrl: 'https://dash.homelab.com',
-    status: 'online',
+    status: 'online', // Initial status, will be auto-checked
     stats: [{ label: 'CPU', value: '12%' }, { label: 'RAM', value: '8GB' }]
   },
   {
