@@ -3,6 +3,7 @@ import { motion, useTransform, MotionValue } from 'framer-motion';
 import * as Icons from 'lucide-react';
 import { ServiceApp, NetworkMode } from '../types';
 import { getActiveUrl } from '../utils/network';
+import { useLanguage } from '../context/LanguageContext';
 
 interface HelixCardProps {
   app: ServiceApp;
@@ -11,6 +12,7 @@ interface HelixCardProps {
 }
 
 const HelixCard: React.FC<HelixCardProps> = ({ app, activeStrength, networkMode }) => {
+  const { t } = useLanguage();
   // @ts-ignore
   const IconComponent = Icons[app.icon] || Icons.HelpCircle;
   const currentUrl = getActiveUrl(app, networkMode);
@@ -24,7 +26,7 @@ const HelixCard: React.FC<HelixCardProps> = ({ app, activeStrength, networkMode 
   try {
       hostname = new URL(currentUrl).hostname;
   } catch (e) {
-      hostname = 'UNKNOWN_HOST';
+      hostname = t('unknown_host');
   }
 
   // --- AUTOMATED STATUS CHECK ---
@@ -166,7 +168,7 @@ const HelixCard: React.FC<HelixCardProps> = ({ app, activeStrength, networkMode 
                         </div>
                     ))
                 ) : (
-                    <div className="col-span-2 text-[9px] text-gray-700 font-mono text-center pt-2">NO TELEMETRY DATA</div>
+                    <div className="col-span-2 text-[9px] text-gray-700 font-mono text-center pt-2">{t('no_telemetry')}</div>
                 )}
             </div>
         </div>
@@ -184,7 +186,7 @@ const HelixCard: React.FC<HelixCardProps> = ({ app, activeStrength, networkMode 
                 rel="noopener noreferrer"
                 className="w-[110px] h-full bg-neon-cyan text-black font-bold font-display text-sm flex items-center justify-center hover:bg-white transition-colors cursor-pointer flex-shrink-0"
             >
-                OPEN_SYS
+                {t('open_sys')}
             </a>
         </div>
       </motion.div>

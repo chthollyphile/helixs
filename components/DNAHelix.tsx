@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, useSpring, useTransform, useMotionValue, MotionValue, AnimatePresence } from 'framer-motion';
-import { Grid, Search, ArrowRight, ArrowLeft, Dna, FileCode, Layers } from 'lucide-react';
+import { Grid, Search, ArrowRight, ArrowLeft, Dna, FileCode, Layers, Globe } from 'lucide-react';
 import { ServiceApp, NetworkMode } from '../types';
 import HelixCard from './HelixCard';
+import { useLanguage } from '../context/LanguageContext';
+import { Language } from '../i18n/locales';
 
 interface DNAHelixProps {
   services: ServiceApp[];
@@ -10,6 +12,7 @@ interface DNAHelixProps {
 }
 
 const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
+  const { t } = useLanguage();
   // State for Overview Mode (initially true)
   const [isOverview, setIsOverview] = useState(true);
   // State for Genome View (Text Matrix Mode)
@@ -342,7 +345,7 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
                         className="w-full relative"
                     >
                         <div className="text-neon-cyan font-mono text-[10px] tracking-[0.4em] uppercase mb-2 text-center">
-                            System Query Protocol
+                            {t('system_query_protocol')}
                         </div>
                         <input
                             ref={searchInputRef}
@@ -361,13 +364,13 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
                         <div className="mt-4 h-8 flex items-center justify-center text-neon-cyan/80 font-mono tracking-widest text-sm">
                             {previewMatch ? (
                                 <>
-                                    <span className="opacity-50 mr-2">{'>'} DETECTED:</span>
+                                    <span className="opacity-50 mr-2">{'>'} {t('detected')}:</span>
                                     <span className="font-bold border border-neon-cyan/30 px-2 py-0.5 bg-neon-cyan/10">
                                         {previewMatch.name}
                                     </span>
                                 </>
                             ) : (
-                                <span className="text-red-500 opacity-70">{'>'} NO_MATCHING_SIGNATURE</span>
+                                <span className="text-red-500 opacity-70">{'>'} {t('no_matching_signature')}</span>
                             )}
                         </div>
                     </motion.div>
@@ -409,8 +412,8 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
             onClick={() => setIsSearching(true)}
         >
             {isSearching 
-                ? "PRESS ENTER TO JUMP • ESC TO CANCEL"
-                : (isOverview ? "Tap to Search • Swipe Down to Focus" : "Tap to Search • Swipe Up for Overview")
+                ? t('search_help')
+                : (isOverview ? t('nav_overview') : t('nav_focus'))
             }
         </motion.div>
     </div>
@@ -427,6 +430,7 @@ const GenomeOverlay = ({
     onSelect: (index: number) => void,
     onClose: () => void
 }) => {
+    const { t } = useLanguage();
     
     // Create the matrix content only once on mount
     const matrixContent = useMemo(() => {
@@ -480,10 +484,10 @@ const GenomeOverlay = ({
                 <div className="h-6 bg-neon-cyan/10 flex items-center justify-between px-2 mb-2 border-b border-neon-cyan/20 shrink-0">
                      <div className="flex items-center gap-2 text-[10px] text-neon-cyan font-mono tracking-widest">
                         <Dna size={12} />
-                        <span>GENOME_SEQUENCE_MAP // V.2.0</span>
+                        <span>{t('genome_map_title')}</span>
                      </div>
                      <div className="text-[10px] text-neon-cyan/50 font-mono">
-                        {services.length} ACTIVE SEQUENCES
+                        {services.length} {t('active_sequences')}
                      </div>
                 </div>
 
@@ -515,7 +519,7 @@ const GenomeOverlay = ({
                 {/* Footer */}
                 <div className="h-6 mt-2 border-t border-neon-cyan/20 flex items-center justify-center shrink-0">
                     <span className="text-[8px] text-neon-cyan/40 font-mono tracking-[0.5em] animate-pulse">
-                        CLICK SEQUENCE TO DECODE // CLICK VOID TO ABORT
+                        {t('genome_action_help')}
                     </span>
                 </div>
              </div>
@@ -717,6 +721,7 @@ interface HUDProps {
 }
 
 const HUD: React.FC<HUDProps> = ({ currentIndex, total, services, viewState, onToggleView }) => {
+    const { t, language, setLanguage } = useLanguage();
     const [displayIndex, setDisplayIndex] = useState(0);
     
     useEffect(() => {
@@ -729,15 +734,21 @@ const HUD: React.FC<HUDProps> = ({ currentIndex, total, services, viewState, onT
     const currentService = services[displayIndex];
 
     const getButtonLabel = () => {
-        if (viewState === 'expand') return 'GRID VIEW';
-        if (viewState === 'grid') return 'GENOME VIEW';
-        return 'EXPAND VIEW';
+        if (viewState === 'expand') return t('view_grid');
+        if (viewState === 'grid') return t('view_genome');
+        return t('view_expand');
     };
 
     const getButtonIcon = () => {
         if (viewState === 'expand') return <Grid size={12} />;
         if (viewState === 'grid') return <FileCode size={12} />;
         return <Layers size={12} />;
+    };
+
+    const cycleLanguage = () => {
+        if (language === 'en') setLanguage('zh');
+        else if (language === 'zh') setLanguage('ja');
+        else setLanguage('en');
     };
 
     return (
@@ -750,15 +761,22 @@ const HUD: React.FC<HUDProps> = ({ currentIndex, total, services, viewState, onT
                 >
                     HELIXS
                 </h1>
-                <div className="flex items-center gap-4 mt-2">
-                     <span className="text-neon-cyan/60 font-mono text-xs tracking-[0.3em] uppercase">Homelab Nav System v2.0</span>
-                     <div className="h-[1px] w-12 md:w-20 bg-neon-cyan/30"></div>
+                <div className="flex flex-wrap items-center gap-4 mt-2">
+                     <span className="text-neon-cyan/60 font-mono text-xs tracking-[0.3em] uppercase">{t('subtitle')}</span>
+                     <div className="hidden md:block h-[1px] w-12 md:w-20 bg-neon-cyan/30"></div>
                      <button 
                         onClick={onToggleView}
                         className={`pointer-events-auto flex items-center gap-2 px-3 py-1 border border-neon-cyan/30 bg-black/50 backdrop-blur-sm text-[10px] font-mono uppercase tracking-wider transition-all hover:bg-neon-cyan/10 hover:border-neon-cyan ${viewState === 'expand' ? 'text-gray-500' : 'text-neon-cyan border-neon-cyan'}`}
                      >
                         {getButtonIcon()}
                         {getButtonLabel()}
+                     </button>
+                     <button
+                        onClick={cycleLanguage}
+                        className="pointer-events-auto flex items-center gap-2 px-3 py-1 border border-neon-cyan/30 bg-black/50 backdrop-blur-sm text-[10px] font-mono uppercase tracking-wider transition-all hover:bg-neon-cyan/10 hover:border-neon-cyan text-neon-cyan/80"
+                     >
+                        <Globe size={12} />
+                        {language.toUpperCase()}
                      </button>
                 </div>
             </div>

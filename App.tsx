@@ -4,12 +4,14 @@ import Background from './components/Background';
 import { detectNetworkMode } from './utils/network';
 import { services as defaultServices } from './data';
 import { NetworkMode, ServiceApp } from './types';
+import { useLanguage } from './context/LanguageContext';
 
 const App: React.FC = () => {
   const [networkMode, setNetworkMode] = useState<NetworkMode>('WAN');
   const [isLoaded, setIsLoaded] = useState(false);
   const [servicesData, setServicesData] = useState<ServiceApp[]>([]);
   const [configLoaded, setConfigLoaded] = useState(false);
+  const { t } = useLanguage();
 
   useEffect(() => {
     // Detect network environment
@@ -74,10 +76,10 @@ const App: React.FC = () => {
              <div className="text-center z-10">
                  <h2 className="font-display font-bold text-3xl text-white tracking-[0.5em] mb-2">HELIXS</h2>
                  <div className="font-mono text-neon-cyan/70 text-xs animate-pulse">
-                   {configLoaded ? 'SYSTEM INITIALIZATION...' : 'LOADING PROTOCOLS...'}
+                   {configLoaded ? t('system_init') : t('loading_protocols')}
                  </div>
                  <div className="mt-2 text-[10px] text-gray-600 font-mono">
-                   {networkMode} PROTOCOL ENGAGED
+                   {networkMode} {t('protocol_engaged')}
                  </div>
              </div>
         </div>
