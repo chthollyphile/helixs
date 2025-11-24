@@ -29,7 +29,7 @@ export const resources = {
     // Card
     unknown_host: "UNKNOWN_HOST",
     no_telemetry: "NO TELEMETRY DATA",
-    open_sys: "OPEN_SYS"
+    open_sys: "[ENTER] OPEN"
   },
   zh: {
     system_init: "系统初始化...",
@@ -50,7 +50,7 @@ export const resources = {
     genome_action_help: "点击序列解码 // 点击空白中止",
     unknown_host: "未知主机",
     no_telemetry: "无遥测数据",
-    open_sys: "进入"
+    open_sys: "[ENTER] 进入"
   },
   ja: {
     system_init: "システム初期化中...",
@@ -71,7 +71,7 @@ export const resources = {
     genome_action_help: "配列をクリックしてデコード // 空白をクリックして中止",
     unknown_host: "不明なホスト",
     no_telemetry: "テレメトリデータなし",
-    open_sys: "システムを開く"
+    open_sys: "[ENTER] 起動"
   }
 };
 

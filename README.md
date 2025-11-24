@@ -20,6 +20,7 @@ https://github.com/user-attachments/assets/ec7fd49e-2259-4f50-9bcd-8776789c390e
 
 ### One-click Vercel Deployment
 Click the button below and select your repository. After the first deployment, configure environment variables such as `lang` (optional) in the Vercel dashboard.
+
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fchthollyphile%2Fhelixs)
 
 ### Docker Compose Deployment
