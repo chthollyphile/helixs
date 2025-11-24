@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import { promises as fs } from 'fs';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -7,6 +8,42 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3234;
+const SUPPORTED_LANGS = ['en', 'zh', 'ja'];
+const normalizedEnvLang = (process.env.lang || '').toLowerCase();
+const DEFAULT_LANG = SUPPORTED_LANGS.includes(normalizedEnvLang)
+  ? normalizedEnvLang
+  : 'en';
+const publicConfigPath = path.join(__dirname, 'public', 'config.json');
+const distConfigPath = path.join(__dirname, 'dist', 'config.json');
+
+const readConfigFile = async () => {
+  const candidates = [publicConfigPath, distConfigPath];
+
+  for (const filePath of candidates) {
+    try {
+      const file = await fs.readFile(filePath, 'utf-8');
+      return file;
+    } catch {
+      // Try next candidate
+    }
+  }
+
+  return null;
+};
+
+app.get('/config.json', async (_req, res) => {
+  const configContent = await readConfigFile();
+
+  if (!configContent) {
+    return res.status(404).json({ error: 'Configuration file not found' });
+  }
+
+  res.type('application/json').send(configContent);
+});
+
+app.get('/api/lang', (_req, res) => {
+  res.json({ lang: DEFAULT_LANG });
+});
 
 // Serve static files from the build directory
 app.use(express.static(path.join(__dirname, 'dist')));

@@ -6,7 +6,7 @@ export const resources = {
     protocol_engaged: "PROTOCOL ENGAGED",
     
     // HUD
-    subtitle: "Homelab Nav System v2.0",
+    subtitle: "Helix Nav System v2.0",
     view_grid: "GRID VIEW",
     view_genome: "GENOME VIEW",
     view_expand: "EXPAND VIEW",
@@ -33,9 +33,9 @@ export const resources = {
   },
   zh: {
     system_init: "系统初始化...",
-    loading_protocols: "正在加载协议...",
+    loading_protocols: "加载协议中...",
     protocol_engaged: "协议已接管",
-    subtitle: "家庭实验室导航系统 v2.0",
+    subtitle: "HelixS导航系统 v2.0",
     view_grid: "网格视图",
     view_genome: "基因视图",
     view_expand: "展开视图",
@@ -50,13 +50,13 @@ export const resources = {
     genome_action_help: "点击序列解码 // 点击空白中止",
     unknown_host: "未知主机",
     no_telemetry: "无遥测数据",
-    open_sys: "打开系统"
+    open_sys: "进入"
   },
   ja: {
     system_init: "システム初期化中...",
     loading_protocols: "プロトコル読み込み中...",
     protocol_engaged: "プロトコル係合",
-    subtitle: "ホームラボ・ナビシステム v2.0",
+    subtitle: "HelixSナビシステム v2.0",
     view_grid: "グリッド表示",
     view_genome: "ゲノム表示",
     view_expand: "展開表示",

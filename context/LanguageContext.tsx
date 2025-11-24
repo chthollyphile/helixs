@@ -8,16 +8,52 @@ interface LanguageContextType {
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+const supportedLanguages = Object.keys(resources) as Language[];
+
+const normalizeLanguage = (value?: string | null): Language | null => {
+  if (!value) return null;
+  const normalized = value.toLowerCase();
+  return supportedLanguages.includes(normalized as Language) ? (normalized as Language) : null;
+};
+
+const detectBrowserLanguage = (): Language => {
+  if (typeof navigator === 'undefined') {
+    return 'en';
+  }
+
+  const browserLang = navigator.language.split('-')[0];
+  return normalizeLanguage(browserLang) ?? 'en';
+};
+
+const fetchEnvLanguage = async (): Promise<Language | null> => {
+  try {
+    const response = await fetch('/api/lang', { cache: 'no-store' });
+    if (!response.ok) return null;
+    const data = await response.json();
+    return normalizeLanguage(data?.lang);
+  } catch {
+    return null;
+  }
+};
 
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [language, setLanguage] = useState<Language>('en');
 
   useEffect(() => {
-    // Basic auto-detection
-    const browserLang = navigator.language.split('-')[0];
-    if (browserLang === 'zh') setLanguage('zh');
-    else if (browserLang === 'ja') setLanguage('ja');
-    else setLanguage('en');
+    let isMounted = true;
+
+    const initializeLanguage = async () => {
+      const envLang = await fetchEnvLanguage();
+      if (isMounted) {
+        setLanguage(envLang ?? detectBrowserLanguage());
+      }
+    };
+
+    initializeLanguage();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const t = (key: TranslationKey): string => {

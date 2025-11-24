@@ -1,0 +1,12 @@
+services:
+  helixs:
+    build: .
+    container_name: helixs
+    restart: unless-stopped
+    ports:
+      - "3234:3234"
+    environment:
+      - lang=en
+    volumes:
+      - ./public/config.json:/app/public/config.json:ro
+
