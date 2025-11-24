@@ -39,8 +39,10 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
   // State to track target for wheel/click events
   const [targetIndex, setTargetIndex] = useState(centerIndex);
 
-  // Sync state with motion value
+  // Keep a ref of targetIndex to access in event listeners without re-binding
+  const targetIndexRef = useRef(targetIndex);
   useEffect(() => {
+    targetIndexRef.current = targetIndex;
     activeIndex.set(targetIndex);
   }, [targetIndex, activeIndex]);
 
@@ -52,7 +54,11 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
   }, [isOverview, centerIndex, services.length]);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Touch Handling Refs
   const touchStartRef = useRef<{x: number, y: number} | null>(null);
+  const startDragIndexRef = useRef(0);
+  const axisLockRef = useRef<'x' | 'y' | null>(null);
 
   // --- SEARCH FUNCTIONALITY ---
   const [isSearching, setIsSearching] = useState(false);
@@ -192,6 +198,8 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
             x: e.touches[0].clientX,
             y: e.touches[0].clientY
         };
+        startDragIndexRef.current = targetIndexRef.current;
+        axisLockRef.current = null;
     };
 
     const handleTouchMove = (e: TouchEvent) => {
@@ -199,44 +207,52 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
         if(!isSearching && e.cancelable) {
             e.preventDefault();
         }
+        
+        if (!touchStartRef.current) return;
+
+        const currentX = e.touches[0].clientX;
+        const currentY = e.touches[0].clientY;
+        const deltaX = currentX - touchStartRef.current.x;
+        const deltaY = currentY - touchStartRef.current.y;
+
+        // Determine axis intention
+        if (!axisLockRef.current) {
+            if (Math.abs(deltaX) > 10) axisLockRef.current = 'x';
+            else if (Math.abs(deltaY) > 10) axisLockRef.current = 'y';
+        }
+
+        if (axisLockRef.current === 'x') {
+            // Natural scrolling: Drag Left -> Move Right (Next Items) -> Index Increases
+            // Sensitivity Logic:
+            // Focus Mode: Spacing is ~360px. Moving 300px should roughly equal 1 index.
+            // Overview Mode: Items are denser. 
+            const pxPerIndex = isOverview ? 100 : 300; 
+            
+            const indexChange = deltaX / pxPerIndex;
+            // Subtract delta because dragging LEFT (negative) should add to index
+            const newIndex = startDragIndexRef.current - indexChange;
+            
+            setTargetIndex(Math.max(-0.5, Math.min(services.length - 0.5, newIndex)));
+        }
     };
 
     const handleTouchEnd = (e: TouchEvent) => {
         if (!touchStartRef.current || isSearching) return;
         
-        const deltaX = e.changedTouches[0].clientX - touchStartRef.current.x;
-        const deltaY = e.changedTouches[0].clientY - touchStartRef.current.y;
-        
-        const absX = Math.abs(deltaX);
-        const absY = Math.abs(deltaY);
-
-        // Tap detection (ignore small movements)
-        if (Math.max(absX, absY) < 30) {
-            touchStartRef.current = null;
-            return;
-        }
-
-        if (absX > absY) {
-            // Horizontal Swipe
-            if (deltaX < 0) {
-                // Swipe Left -> Next Item
-                 setTargetIndex(prev => Math.min(services.length - 1, Math.round(prev) + 1));
-            } else {
-                // Swipe Right -> Previous Item
-                 setTargetIndex(prev => Math.max(0, Math.round(prev) - 1));
-            }
+        // If Y-axis lock, check for swipe triggers
+        if (axisLockRef.current === 'y') {
+             const deltaY = e.changedTouches[0].clientY - touchStartRef.current.y;
+             if (Math.abs(deltaY) > 50) {
+                if (deltaY < 0 && !isOverview) setIsOverview(true);
+                else if (deltaY > 0 && isOverview) setIsOverview(false);
+             }
         } else {
-            // Vertical Swipe
-            if (deltaY < 0) {
-                // Swipe Up -> Overview
-                if (!isOverview) setIsOverview(true);
-            } else {
-                // Swipe Down -> Focus
-                if (isOverview) setIsOverview(false);
-            }
+            // Horizontal or Tap -> Snap to nearest index
+            setTargetIndex(prev => Math.round(prev));
         }
         
         touchStartRef.current = null;
+        axisLockRef.current = null;
     };
 
     container.addEventListener('wheel', handleWheel, { passive: false });
@@ -352,7 +368,7 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
         >
             {isSearching 
                 ? "PRESS ENTER TO JUMP • ESC TO CANCEL"
-                : (isOverview ? "Swipe Down to Expand • Swipe Left/Right to Navigate • Tap to Search" : "Swipe Up for Overview • Scroll to Navigate • Tap to Search")
+                : (isOverview ? "Swipe Down to Expand • Drag to Navigate • Tap to Search" : "Swipe Up for Overview • Drag to Navigate • Tap to Search")
             }
         </motion.div>
     </div>
