@@ -52,6 +52,7 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
   }, [isOverview, centerIndex, services.length]);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const touchStartRef = useRef<{x: number, y: number} | null>(null);
 
   // --- SEARCH FUNCTIONALITY ---
   const [isSearching, setIsSearching] = useState(false);
@@ -131,11 +132,12 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
   };
 
 
-  // --- GESTURE HANDLING ---
+  // --- GESTURE HANDLING (WHEEL & TOUCH) ---
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
+    // --- MOUSE WHEEL ---
     const handleWheel = (e: WheelEvent) => {
         // Prevent gestures if searching
         if (isSearching) return;
@@ -150,12 +152,12 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
         // Threshold prevents accidental switching while scrolling diagonally
         if (absY > absX && absY > 20) {
             if (deltaY < 0 && !isOverview) {
-                // Swipe UP -> Go to Overview
+                // Swipe UP (Scroll Up) -> Go to Overview
                 setIsOverview(true);
                 return;
             } 
             if (deltaY > 0 && isOverview) {
-                // Swipe DOWN -> Go to Focus (Expand)
+                // Swipe DOWN (Scroll Down) -> Go to Focus (Expand)
                 setIsOverview(false);
                 return;
             }
@@ -184,9 +186,71 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
         }
     };
 
+    // --- TOUCH EVENTS ---
+    const handleTouchStart = (e: TouchEvent) => {
+        touchStartRef.current = {
+            x: e.touches[0].clientX,
+            y: e.touches[0].clientY
+        };
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+        // Prevent default scrolling behavior to allow custom gestures
+        if(!isSearching && e.cancelable) {
+            e.preventDefault();
+        }
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+        if (!touchStartRef.current || isSearching) return;
+        
+        const deltaX = e.changedTouches[0].clientX - touchStartRef.current.x;
+        const deltaY = e.changedTouches[0].clientY - touchStartRef.current.y;
+        
+        const absX = Math.abs(deltaX);
+        const absY = Math.abs(deltaY);
+
+        // Tap detection (ignore small movements)
+        if (Math.max(absX, absY) < 30) {
+            touchStartRef.current = null;
+            return;
+        }
+
+        if (absX > absY) {
+            // Horizontal Swipe
+            if (deltaX < 0) {
+                // Swipe Left -> Next Item
+                 setTargetIndex(prev => Math.min(services.length - 1, Math.round(prev) + 1));
+            } else {
+                // Swipe Right -> Previous Item
+                 setTargetIndex(prev => Math.max(0, Math.round(prev) - 1));
+            }
+        } else {
+            // Vertical Swipe
+            if (deltaY < 0) {
+                // Swipe Up -> Overview
+                if (!isOverview) setIsOverview(true);
+            } else {
+                // Swipe Down -> Focus
+                if (isOverview) setIsOverview(false);
+            }
+        }
+        
+        touchStartRef.current = null;
+    };
+
     container.addEventListener('wheel', handleWheel, { passive: false });
+    
+    // Touch listeners
+    container.addEventListener('touchstart', handleTouchStart, { passive: false });
+    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+    container.addEventListener('touchend', handleTouchEnd, { passive: false });
+
     return () => {
         container.removeEventListener('wheel', handleWheel);
+        container.removeEventListener('touchstart', handleTouchStart);
+        container.removeEventListener('touchmove', handleTouchMove);
+        container.removeEventListener('touchend', handleTouchEnd);
     };
   }, [isOverview, services.length, isSearching]);
 
@@ -216,7 +280,7 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
 
         {/* --- SEARCH UI OVERLAY --- */}
         {isSearching && (
-            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-[2px]">
+            <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-[2px]">
                 <div className="w-full max-w-xl px-4 flex flex-col items-center">
                     <motion.div 
                         initial={{ opacity: 0, y: 20 }}
@@ -281,13 +345,14 @@ const DNAHelix: React.FC<DNAHelixProps> = ({ services, networkMode }) => {
         
         {/* Helper Text */}
         <motion.div 
-            className="absolute bottom-8 left-0 w-full text-center text-[10px] text-neon-cyan/40 font-mono tracking-[0.5em] uppercase pointer-events-none"
+            className="absolute bottom-8 left-0 w-full text-center text-[10px] text-neon-cyan/40 font-mono tracking-[0.5em] uppercase pointer-events-auto cursor-pointer select-none z-50"
             animate={{ opacity: [0.5, 1, 0.5] }}
             transition={{ duration: 3, repeat: Infinity }}
+            onClick={() => setIsSearching(true)}
         >
             {isSearching 
                 ? "PRESS ENTER TO JUMP • ESC TO CANCEL"
-                : (isOverview ? "Swipe Down to Expand • Swipe Left/Right to Navigate • Type to Search" : "Swipe Up for Overview • Scroll to Navigate")
+                : (isOverview ? "Swipe Down to Expand • Swipe Left/Right to Navigate • Tap to Search" : "Swipe Up for Overview • Scroll to Navigate • Tap to Search")
             }
         </motion.div>
     </div>

@@ -37,7 +37,7 @@ const HelixCard: React.FC<HelixCardProps> = ({ app, activeStrength, networkMode 
   const dotScale = useTransform(activeStrength, [0, 0.5], [1, 0.5]);
 
   return (
-    <div className="relative flex items-center justify-center w-[340px] h-[240px]">
+    <div className="relative flex items-center justify-center w-[340px] max-w-[90vw] h-[240px]">
       
       {/* 1. The Small Dot / Icon Representation (For distant nodes) */}
       <motion.div 
